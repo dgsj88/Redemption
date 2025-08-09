@@ -89,3 +89,11 @@ export const postSortObjSchema = z.object({
   isApproved: sortTypes.optional(),
   authorId: sortTypes.optional(),
 });
+
+//otp schemas
+
+export const otpReqSchema = z.object({
+  otp: z.string().min(6, {
+    message: "Your one-time password must be 6 characters.",
+  }),
+})
