@@ -19,7 +19,7 @@ export const userUpdateReqObjSchema = z.object({
   email: z.email().trim().min(5).max(255).optional(),
   role: userRoles.default("USER").optional(),
   credits: z.int().default(0).optional(),
-  isActive: z.boolean().default(true).optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const userIdSchema = z.cuid().trim();
@@ -158,7 +158,7 @@ export const transactionCreateReqSchema = z.object({
   postId: postIdSchema,
 });
 
-export const transactionFilterObjectSchema = z.object({
+export const transactionFilterObjSchema = z.object({
   id: transactionIdSchema.optional(),
   createdAt: z
     .object({
@@ -176,5 +176,10 @@ export const transactionFilterObjectSchema = z.object({
 });
 
 export const transactionSortObjectSchema = z.object({
-  
+  id: sortTypes.optional(),
+  createdAt: sortTypes.optional(),
+  buyerId: sortTypes.optional(),
+  sellerId: sortTypes.optional(),
+  postId: sortTypes.optional(),
+  post: postSortObjSchema.optional()
 });
