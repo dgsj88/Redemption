@@ -10,3 +10,4 @@ type userUpdateResObj = {
     credits: number;
     isActive: boolean;
 }
+

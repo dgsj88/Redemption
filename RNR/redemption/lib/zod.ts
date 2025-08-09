@@ -35,7 +35,7 @@ export const userLoginFormSchema = userLoginReqObjSchema;
 
 //post schemas
 
-const postTypes = z.enum([
+export const postTypes = z.enum([
   "Plastic_Bottles",
   "Aluminum_Cans",
   "Paper",

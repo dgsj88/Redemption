@@ -6,46 +6,69 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { AdminSubmissions } from "@/components/admin-submissions"
 import { SMTPConfigPage } from "@/components/smtp-config-page"
-import {
-  getAllUsers,
-  updateUser,
-  getAllSubmissions,
-  getAllMarketplaceItems,
-  type DatabaseUser,
-  type RecyclingSubmission,
-  type MarketplaceItem,
-} from "@/lib/user-database"
+import { postTypes } from "@/lib/zod"
+import z from "zod"
+// import { RecyclingSubmission } from "@/lib/user-database"
+
+// Define the Submission type
+type Submission = {
+  id: string
+  type: string
+  author: string
+  createdAt: string
+  isApproved: "true" | "false"
+  credits: number
+}
+
+// DatabaseUser type definition
+type DatabaseUser = {
+  id: string
+  name: string
+  email: string
+  role: "user" | "admin"
+  isActive: "true" | "false"
+  credits: number
+  createdAt: string
+}
+
+
+function updateUser(users: DatabaseUser[], userId: string, updates: Partial<DatabaseUser>) {
+  // Find the user and update properties (mock logic)
+  const user = users.find((u) => u.id === userId)
+  if (!user) return null
+  return { ...user, ...updates }
+}
 
 interface AdminDashboardProps {
   onLogout: () => void
 }
 
-export function AdminDashboard({ onLogout }: AdminDashboardProps) {
+export function AdminDashboard() {
   const [currentView, setCurrentView] = useState<"dashboard" | "submissions" | "users" | "marketplace" | "smtp">(
     "dashboard",
   )
   const [users, setUsers] = useState<DatabaseUser[]>([])
-  const [submissions, setSubmissions] = useState<RecyclingSubmission[]>([])
-  const [marketplaceItems, setMarketplaceItems] = useState<MarketplaceItem[]>([])
-  const [selectedUser, setSelectedUser] = useState<DatabaseUser | null>(null)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  // const [marketplaceItems, setMarketplaceItems] = useState<MarketplaceItem[]>([])
+  // const [selectedUser, setSelectedUser] = useState<DatabaseUser | null>(null)
 
   useEffect(() => {
     // Load data
-    setUsers(getAllUsers())
-    setSubmissions(getAllSubmissions())
-    setMarketplaceItems(getAllMarketplaceItems())
+    // setUsers(getAllUsers())
+    // setSubmissions(getAllSubmissions())
+    // setMarketplaceItems(getAllMarketplaceItems())
   }, [])
 
-  const handleUserRoleChange = (userId: string, newRole: "user" | "admin" | "approver") => {
-    const updatedUser = updateUser(userId, { userRole: newRole })
+  const handleUserRoleChange = (userId: string, newRole: "user" | "admin") => {
+    const updatedUser = updateUser(users, userId, { role: newRole })
     if (updatedUser) {
       setUsers((prev) => prev.map((user) => (user.id === userId ? updatedUser : user)))
       console.log(`👤 USER ROLE UPDATED: ${updatedUser.name} is now ${newRole}`)
     }
   }
 
-  const handleUserStatusChange = (userId: string, newStatus: "active" | "suspended" | "pending") => {
-    const updatedUser = updateUser(userId, { accountStatus: newStatus })
+  const handleUserStatusChange = (userId: string, newStatus: "true" | "false") => {
+    const updatedUser = updateUser(users, userId, { isActive: newStatus })
     if (updatedUser) {
       setUsers((prev) => prev.map((user) => (user.id === userId ? updatedUser : user)))
       console.log(`👤 USER STATUS UPDATED: ${updatedUser.name} is now ${newStatus}`)
@@ -54,25 +77,25 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const getStats = () => {
     const totalUsers = users.length
-    const adminUsers = users.filter((u) => u.userRole === "admin").length
-    const approverUsers = users.filter((u) => u.userRole === "approver").length
-    const activeUsers = users.filter((u) => u.accountStatus === "active").length
-    const pendingSubmissions = submissions.filter((s) => s.status === "pending").length
-    const approvedSubmissions = submissions.filter((s) => s.status === "approved").length
+    const adminUsers = users.filter((u) => u.role === "admin").length
+    // const approverUsers = users.filter((u) => u.userRole === "approver").length
+    const activeUsers = users.filter((u) => u.isActive === "true").length
+    const pendingSubmissions = submissions.filter((s) => s.isApproved === "false").length
+    const approvedSubmissions = submissions.filter((s) => s.isApproved === "true").length
     const totalCreditsAwarded = submissions
-      .filter((s) => s.status === "approved")
-      .reduce((sum, s) => sum + (s.actualCredits || s.estimatedCredits), 0)
-    const marketplaceItemsCount = marketplaceItems.length
+      .filter((s) => s.isApproved === "true")
+      .reduce((sum, s) => sum + (s.credits), 0)
+    // const marketplaceItemsCount = marketplaceItems.length
 
     return {
       totalUsers,
       adminUsers,
-      approverUsers,
+      // approverUsers,
       activeUsers,
       pendingSubmissions,
       approvedSubmissions,
-      totalCreditsAwarded,
-      marketplaceItemsCount,
+      // totalCreditsAwarded,
+      // marketplaceItemsCount,
     }
   }
 
@@ -102,13 +125,13 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <p className="text-gray-600">Manage users, submissions, and system settings</p>
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={onLogout}
+            {/* <Button
+              onClick={}
               variant="outline"
               className="text-red-600 border-red-600 hover:bg-red-50 bg-transparent"
-            >
-              Logout
-            </Button>
+            > */}
+              {/* Logout
+            </Button> */}
           </div>
         </div>
 

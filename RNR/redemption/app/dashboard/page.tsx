@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import UserPage from "./_components/user-page";
+import { AdminDashboard } from "./_components/admin-dashboard";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -36,8 +37,7 @@ export default async function DashboardPage() {
         </NavigationMenuList>
       </NavigationMenu>
     </header>
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        {isAdmin && <></>}
+        {isAdmin && <AdminDashboard/>}
         {!isAdmin && (
           <UserPage
             email={user?.email || ""}
@@ -45,7 +45,6 @@ export default async function DashboardPage() {
             userId={user?.id || ""}
           />
         )}
-      </div>
     </>
   );
 }

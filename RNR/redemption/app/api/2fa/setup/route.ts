@@ -8,7 +8,7 @@ export async function POST() {
     const session = await auth();
 
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
