@@ -17,8 +17,6 @@ export const userCreateReqObjSchema = z.object({
 export const userUpdateReqObjSchema = z.object({
   name: z.string().trim().min(5).max(255).optional(),
   email: z.email().trim().min(5).max(255).optional(),
-  password: z.string().trim().min(5).max(255).optional(),
-  salt: z.string().trim().min(16).max(16).optional(), // 16-byte salt
   role: userRoles.default("USER").optional(),
   credits: z.int().default(0).optional(),
   isActive: z.boolean().default(true).optional(),

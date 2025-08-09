@@ -4,11 +4,11 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { AdminSubmissions } from "@/components/admin-submissions"
-import { SMTPConfigPage } from "@/components/smtp-config-page"
+import { AdminSubmissions } from "@/app/dashboard/_components/admin-submissions"
+// import { SMTPConfigPage } from "@/app/dashboard/_components/smtp-config-page"
 import { postTypes } from "@/lib/zod"
 import z from "zod"
-// import { RecyclingSubmission } from "@/lib/user-database"
+import { RecyclingSubmissionModal } from "@/app/dashboard/_components/recycling-submission-modal"
 
 // Define the Submission type
 type Submission = {
@@ -25,7 +25,7 @@ type DatabaseUser = {
   id: string
   name: string
   email: string
-  role: "user" | "admin"
+  role: "USER" | "ADMIN"
   isActive: "true" | "false"
   credits: number
   createdAt: string
@@ -44,26 +44,32 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard() {
-  const [currentView, setCurrentView] = useState<"dashboard" | "submissions" | "users" | "marketplace" | "smtp">(
+  const [currentView, setCurrentView] = useState<"dashboard" | "submissions" | "users" | "marketplace">(
     "dashboard",
   )
   const [users, setUsers] = useState<DatabaseUser[]>([])
   const [submissions, setSubmissions] = useState<Submission[]>([])
-  // const [marketplaceItems, setMarketplaceItems] = useState<MarketplaceItem[]>([])
+  const [marketplaceItems, setMarketplaceItems] = useState<any[]>([])
   // const [selectedUser, setSelectedUser] = useState<DatabaseUser | null>(null)
 
   useEffect(() => {
+    if (currentView === "users") {
+      fetch("/api/users?isActive=true&sortByName=asc")
+        .then((res) => res.json())
+        .then((data) => setUsers(data.users))
+        .catch((err) => console.error("Failed to fetch users:", err));
+    }
+  }, [currentView]);    
     // Load data
     // setUsers(getAllUsers())
     // setSubmissions(getAllSubmissions())
     // setMarketplaceItems(getAllMarketplaceItems())
-  }, [])
 
-  const handleUserRoleChange = (userId: string, newRole: "user" | "admin") => {
+  const handleUserRoleChange = (userId: string, newRole: "USER" | "ADMIN") => {
     const updatedUser = updateUser(users, userId, { role: newRole })
     if (updatedUser) {
       setUsers((prev) => prev.map((user) => (user.id === userId ? updatedUser : user)))
-      console.log(`👤 USER ROLE UPDATED: ${updatedUser.name} is now ${newRole}`)
+      console.log(`👤 USER ROLE UPDATED: ${updatedUser.email} is now ${newRole}`)
     }
   }
 
@@ -71,13 +77,13 @@ export function AdminDashboard() {
     const updatedUser = updateUser(users, userId, { isActive: newStatus })
     if (updatedUser) {
       setUsers((prev) => prev.map((user) => (user.id === userId ? updatedUser : user)))
-      console.log(`👤 USER STATUS UPDATED: ${updatedUser.name} is now ${newStatus}`)
+      console.log(`👤 USER STATUS UPDATED: ${updatedUser.email} is now ${newStatus}`)
     }
   }
 
   const getStats = () => {
     const totalUsers = users.length
-    const adminUsers = users.filter((u) => u.role === "admin").length
+    const adminUsers = users.filter((u) => u.role === "ADMIN").length
     // const approverUsers = users.filter((u) => u.userRole === "approver").length
     const activeUsers = users.filter((u) => u.isActive === "true").length
     const pendingSubmissions = submissions.filter((s) => s.isApproved === "false").length
@@ -85,7 +91,7 @@ export function AdminDashboard() {
     const totalCreditsAwarded = submissions
       .filter((s) => s.isApproved === "true")
       .reduce((sum, s) => sum + (s.credits), 0)
-    // const marketplaceItemsCount = marketplaceItems.length
+    const marketplaceItemsCount = marketplaceItems.length
 
     return {
       totalUsers,
@@ -94,26 +100,26 @@ export function AdminDashboard() {
       activeUsers,
       pendingSubmissions,
       approvedSubmissions,
-      // totalCreditsAwarded,
-      // marketplaceItemsCount,
+      totalCreditsAwarded,
+      marketplaceItemsCount,
     }
   }
 
   const stats = getStats()
 
-  if (currentView === "smtp") {
-    return <SMTPConfigPage onBack={() => setCurrentView("dashboard")} />
-  }
+  // if (currentView === "smtp") {
+  //   return <SMTPConfigPage onBack={() => setCurrentView("dashboard")} />
+  // }
 
-  if (currentView === "submissions") {
-    return (
-      <AdminSubmissions
-        onBack={() => setCurrentView("dashboard")}
-        submissions={submissions}
-        onSubmissionUpdate={(updatedSubmissions) => setSubmissions(updatedSubmissions)}
-      />
-    )
-  }
+  // if (currentView === "submissions") {
+  //   return (
+  //     <AdminSubmissions
+  //       onBack={() => setCurrentView("dashboard")}
+  //       submissions={submissions}
+  //       onSubmissionUpdate={(updatedSubmissions) => setSubmissions(updatedSubmissions)}
+  //     />
+  //   )
+  // }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -158,9 +164,9 @@ export function AdminDashboard() {
           >
             Marketplace
           </Button>
-          <Button onClick={() => setCurrentView("smtp")} variant={currentView === "smtp" ? "default" : "outline"}>
+          {/* <Button onClick={() => setCurrentView("smtp")} variant={currentView === "smtp" ? "default" : "outline"}>
             Email Config
-          </Button>
+          </Button> */}
         </div>
 
         {/* Dashboard View */}
@@ -183,7 +189,7 @@ export function AdminDashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.totalUsers}</div>
                   <p className="text-xs text-muted-foreground">
-                    {stats.activeUsers} active, {stats.adminUsers} admins, {stats.approverUsers} approvers
+                    {stats.activeUsers} active, {stats.adminUsers} admins
                   </p>
                 </CardContent>
               </Card>
@@ -298,7 +304,7 @@ export function AdminDashboard() {
                     <span className="text-sm">Marketplace</span>
                   </Button>
 
-                  <Button
+                  {/* <Button
                     onClick={() => setCurrentView("smtp")}
                     variant="outline"
                     className="h-20 flex flex-col items-center justify-center space-y-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
@@ -312,7 +318,7 @@ export function AdminDashboard() {
                       />
                     </svg>
                     <span className="text-sm">Email Configuration</span>
-                  </Button>
+                  </Button> */}
                 </div>
               </CardContent>
             </Card>
@@ -330,22 +336,22 @@ export function AdminDashboard() {
                       <div className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                         <div>
-                          <p className="font-medium">{submission.itemType}</p>
+                          <p className="font-medium">{submission.type}</p>
                           <p className="text-sm text-gray-600">
-                            Submitted by {submission.userName} • {submission.submissionDate}
+                            Submitted by {submission.author} • {submission.createdAt}
                           </p>
                         </div>
                       </div>
                       <Badge
                         variant={
-                          submission.status === "approved"
+                          submission.isApproved === "true"
                             ? "default"
-                            : submission.status === "rejected"
+                            : submission.isApproved === "false"
                               ? "destructive"
                               : "secondary"
                         }
                       >
-                        {submission.status}
+                        {submission.isApproved}
                       </Badge>
                     </div>
                   ))}
@@ -368,47 +374,47 @@ export function AdminDashboard() {
                   <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium">{user.name.charAt(0).toUpperCase()}</span>
+                        <span className="text-sm font-medium">{user.email.charAt(0).toUpperCase()}</span>
                       </div>
                       <div>
-                        <p className="font-medium">{user.name}</p>
+                        <p className="font-medium">{user.name || user.email}</p>
                         <p className="text-sm text-gray-600">{user.email}</p>
                         <p className="text-xs text-gray-500">
-                          Credits: ${user.creditBalance.toFixed(2)} • Joined: {user.registrationDate}
+                          Credits: ${user.credits.toFixed(2)} • Joined: {user.createdAt}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <select
-                        value={user.userRole}
-                        onChange={(e) => handleUserRoleChange(user.id, e.target.value as "user" | "admin" | "approver")}
+                        value={user.role}
+                        onChange={(e) => handleUserRoleChange(user.id, e.target.value as "USER" | "ADMIN")}
                         className="px-3 py-1 border rounded text-sm"
                       >
-                        <option value="user">User</option>
-                        <option value="approver">Approver</option>
-                        <option value="admin">Admin</option>
+                        <option value="USER">User</option>
+                        {/* <option value="approver">Approver</option> */}
+                        <option value="ADMIN">Admin</option>
                       </select>
                       <select
-                        value={user.accountStatus}
+                        value={user.isActive}
                         onChange={(e) =>
-                          handleUserStatusChange(user.id, e.target.value as "active" | "suspended" | "pending")
+                          handleUserStatusChange(user.id, e.target.value as "true" | "false")
                         }
                         className="px-3 py-1 border rounded text-sm"
                       >
-                        <option value="active">Active</option>
-                        <option value="pending">Pending</option>
-                        <option value="suspended">Suspended</option>
+                        <option value="true">Active</option>
+                        {/* <option value="pending">Pending</option> */}
+                        <option value="false">Suspended</option>
                       </select>
                       <Badge
                         variant={
-                          user.userRole === "admin"
+                          user.role === "ADMIN"
                             ? "destructive"
-                            : user.userRole === "approver"
+                            : user.role === "USER"
                               ? "default"
                               : "secondary"
                         }
                       >
-                        {user.userRole}
+                        {user.role}
                       </Badge>
                     </div>
                   </div>

@@ -12,11 +12,11 @@ export async function PUT(
     const userId = userIdSchema.parse((await params).id);
     const reqObj = await req.json();
     const parsedReqObj = userUpdateReqObjSchema.parse(reqObj);
-    if (parsedReqObj.password) {
-      const { hash, salt } = await hashPasswordPBKDF2(parsedReqObj.password);
-      parsedReqObj.password = hash; // update password with hashed value
-      parsedReqObj.salt = salt; // update salt with generated salt
-    }
+    // if (parsedReqObj.password) {
+    //   const { hash, salt } = await hashPasswordPBKDF2(parsedReqObj.password);
+    //   parsedReqObj.password = hash; // update password with hashed value
+    //   parsedReqObj.salt = salt; // update salt with generated salt
+    // }
     await prisma.user.update({
       where: {
         id: userId,
@@ -24,19 +24,17 @@ export async function PUT(
       data: {
         name: parsedReqObj.name,
         email: parsedReqObj.email,
-        password: parsedReqObj.password,
-        salt: parsedReqObj.salt,
         role: parsedReqObj.role,
         credits: parsedReqObj.credits,
         isActive: parsedReqObj.isActive,
       },
     });
-    return Response.json({}, { status: 204 });
+    return Response.json({}, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
     }
-    return Response.json({ error }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }
 
