@@ -165,7 +165,7 @@ export async function POST(req: Request) {
     await prisma.post.create({
       data: parsedReqObj,
     });
-    return Response.json({}, { status: 204 });
+    return new Response(null, { status: 204 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });

@@ -33,6 +33,10 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
     if (error instanceof ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
     }
+    if (error instanceof PrismaClientKnownRequestError) {
+      const { error: errMsg, status } = prismaErrorHandler(error);
+      return Response.json({ error: errMsg }, { status });
+    }
     return Response.json({ error }, { status: 500 });
   }
 }
@@ -74,6 +78,10 @@ export async function PUT(
   } catch (error) {
     if (error instanceof ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
+    }
+    if (error instanceof PrismaClientKnownRequestError) {
+      const { error: errMsg, status } = prismaErrorHandler(error);
+      return Response.json({ error: errMsg }, { status });
     }
     return Response.json({ error }, { status: 500 });
   }

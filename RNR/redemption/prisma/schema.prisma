@@ -13,7 +13,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  //shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 enum UserRole {
@@ -50,23 +49,25 @@ model User {
 }
 
 model Post {
-  id         String   @id @default(cuid())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  type       ItemType @default(Plastic_Bottles)
-  desc       String?
-  credits    Int      @default(0)
-  isApproved Boolean  @default(false)
-  authorId   String
-  author     User     @relation(fields: [authorId], references: [id])
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  type        ItemType     @default(Plastic_Bottles)
+  desc        String?
+  credits     Int          @default(0)
+  isApproved  Boolean      @default(false)
+  authorId    String       @unique
+  Author      User         @relation(fields: [authorId], references: [id])
+  Transaction Transaction? @relation("post")
 }
 
 model Transaction {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-  BuyerId   String
-  SellerId  String
-  buyer     User     @relation("Buyer", fields: [BuyerId], references: [id])
-  seller    User     @relation("Seller", fields: [SellerId], references: [id])
-  postId    String
+  buyerId   String
+  sellerId  String
+  Buyer     User     @relation("Buyer", fields: [buyerId], references: [id])
+  Seller    User     @relation("Seller", fields: [sellerId], references: [id])
+  postId    String   @unique
+  Post      Post     @relation("post", fields: [postId], references: [id])
 }
