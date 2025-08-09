@@ -35,7 +35,6 @@ export async function POST() {
     });
 
     return NextResponse.json({
-      success: true,
       qrCodeDataUrl,
     });
   } catch (error) {

@@ -33,19 +33,19 @@ enum ItemType {
 }
 
 model User {
-  id          String        @id @default(cuid())
-  createdAt   DateTime      @default(now())
-  email       String        @unique
-  password    String
-  salt        String
-  name        String?
-  twoFactorAuth Boolean       @default(false)
-  twoFactorSecret String? 
-  credits     Int           @default(0)
-  isActive    Boolean       @default(true)
-  role        UserRole      @default(USER)
-  Post        Post[]
-  TransactionsAsBuyer Transaction[] @relation("Buyer") 
+  id                  String        @id @default(cuid())
+  createdAt           DateTime      @default(now())
+  email               String        @unique
+  password            String
+  salt                String
+  name                String?
+  twoFactorAuth       Boolean       @default(false)
+  twoFactorSecret     String?
+  credits             Int           @default(0)
+  isActive            Boolean       @default(true)
+  role                UserRole      @default(USER)
+  Post                Post[]
+  TransactionsAsBuyer Transaction[] @relation("Buyer")
   TransactionAsSeller Transaction[] @relation("Seller")
 }
 
