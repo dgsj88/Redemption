@@ -1,7 +1,8 @@
-import { hashPasswordPBKDF2 } from "@/utils/auth";
 import prisma from "@/lib/prisma";
 import { userIdSchema, userUpdateReqObjSchema } from "@/lib/zod";
 import z from "zod";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { prismaErrorHandler } from "@/utils/prisma-error-handler";
 
 // update user func
 export async function PUT(
@@ -12,11 +13,6 @@ export async function PUT(
     const userId = userIdSchema.parse((await params).id);
     const reqObj = await req.json();
     const parsedReqObj = userUpdateReqObjSchema.parse(reqObj);
-    // if (parsedReqObj.password) {
-    //   const { hash, salt } = await hashPasswordPBKDF2(parsedReqObj.password);
-    //   parsedReqObj.password = hash; // update password with hashed value
-    //   parsedReqObj.salt = salt; // update salt with generated salt
-    // }
     await prisma.user.update({
       where: {
         id: userId,
@@ -29,12 +25,16 @@ export async function PUT(
         isActive: parsedReqObj.isActive,
       },
     });
-    return Response.json({}, { status: 200 });
+    return new Response(null, { status: 204 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
     }
-    return Response.json({ error: error.message }, { status: 500 });
+    if (error instanceof PrismaClientKnownRequestError) {
+      const { error: errMsg, status } = prismaErrorHandler(error);
+      return Response.json({ error: errMsg }, { status });
+    }
+    return Response.json({ error }, { status: 500 });
   }
 }
 
@@ -61,6 +61,10 @@ export async function GET(
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
     }
+    if (error instanceof PrismaClientKnownRequestError) {
+      const { error: errMsg, status } = prismaErrorHandler(error);
+      return Response.json({ error: errMsg }, { status });
+    }
     return Response.json({ error }, { status: 500 });
   }
 }
@@ -76,10 +80,14 @@ export async function DELETE(
         id: userId,
       },
     });
-    return Response.json({}, { status: 204 });
+    return new Response(null, { status: 204 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
+    }
+    if (error instanceof PrismaClientKnownRequestError) {
+      const { error: errMsg, status } = prismaErrorHandler(error);
+      return Response.json({ error: errMsg }, { status });
     }
     return Response.json({ error }, { status: 500 });
   }

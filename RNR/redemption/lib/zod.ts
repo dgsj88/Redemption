@@ -55,7 +55,7 @@ export const userFilterObjSchema = z.object({
     })
     .optional(),
   role: userRoles.optional(),
-  isActive: z.boolean().optional()
+  isActive: z.boolean().optional(),
 });
 
 export const userSortObjSchema = z.object({
@@ -70,7 +70,7 @@ export const userSortObjSchema = z.object({
 });
 
 //post schemas
-export const postIdSchema = z.cuid();
+export const postIdSchema = z.cuid().trim();
 
 export const postTypes = z.enum([
   "Plastic_Bottles",
@@ -127,7 +127,6 @@ export const postSortObjSchema = z.object({
   authorId: sortTypes.optional(),
 });
 
-
 export const postUpdateObjSchema = z.object({
   type: postTypes.optional(),
   desc: z.string().trim().optional(),
@@ -148,4 +147,34 @@ export const otpReqSchema = z.object({
   otp: z.string().min(6, {
     message: "Your one-time password must be 6 characters.",
   }),
+});
+
+//transaction schemas
+const transactionIdSchema = z.cuid().trim();
+
+export const transactionCreateReqSchema = z.object({
+  buyerId: userIdSchema,
+  sellerId: userIdSchema,
+  postId: postIdSchema,
+});
+
+export const transactionFilterObjectSchema = z.object({
+  id: transactionIdSchema.optional(),
+  createdAt: z
+    .object({
+      gte: z.date().optional(),
+      lte: z.date().optional(),
+      gt: z.date().optional(),
+      lt: z.date().optional(),
+      equals: z.date().optional(),
+    })
+    .optional(),
+  buyerId: userIdSchema.optional(),
+  sellerId: userIdSchema.optional(),
+  postId: postIdSchema.optional(),
+  post: postFilterObjSchema.optional()
+});
+
+export const transactionSortObjectSchema = z.object({
+  
 });

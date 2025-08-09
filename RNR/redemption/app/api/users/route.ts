@@ -9,6 +9,8 @@ import {
 } from "@/lib/zod";
 import z from "zod";
 import { auth } from "@/auth";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { prismaErrorHandler } from "@/utils/prisma-error-handler";
 
 
 //get user
@@ -176,6 +178,10 @@ export async function GET(req: Request) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
     }
+    if (error instanceof PrismaClientKnownRequestError) {
+      const { error: errMsg, status } = prismaErrorHandler(error);
+      return Response.json({ error: errMsg }, { status });
+    }
     return Response.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -194,6 +200,10 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
+    }
+    if (error instanceof PrismaClientKnownRequestError) {
+      const { error: errMsg, status } = prismaErrorHandler(error);
+      return Response.json({ error: errMsg }, { status });
     }
     return Response.json({ error }, { status: 500 });
   }
