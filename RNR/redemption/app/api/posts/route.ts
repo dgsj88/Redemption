@@ -1,12 +1,17 @@
+import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { postFilterObjSchema, postSortObjSchema } from "@/lib/zod";
-import { NextRequest } from "next/server";
+import {
+  postCreateSchema,
+  postFilterObjSchema,
+  postSortObjSchema,
+  postTypes,
+  sortTypes,
+} from "@/lib/zod";
 import z from "zod";
 
 //some helpers
 function buildFilterObject(searchParams: URLSearchParams) {
-  const filterObj = {};
-  if (searchParams.get("id")) filterObj.id = searchParams.get("id");
+  const filterObj: z.infer<typeof postFilterObjSchema> = {};
   //id filter
   const idFilter = searchParams.get("id");
 
@@ -65,8 +70,8 @@ function buildFilterObject(searchParams: URLSearchParams) {
 
   if (hasIdFilter) filterObj.id = idFilter;
   if (hasAuthorIdFilter) filterObj.authorId = authorIdFilter;
-  if (hasTypeFilter) filterObj.type = typeFilter;
-  if (hasIsApprovedFilter) filterObj.isApproved = isApprovedFilter;
+  if (hasTypeFilter) filterObj.type = typeFilter as z.infer<typeof postTypes>;
+  if (hasIsApprovedFilter) filterObj.isApproved = isApprovedFilter.toLowerCase() === "true";
   if (hasCreatedAtFilter) {
     filterObj.createdAt = {};
     if (createdAtGteFilter)
@@ -102,26 +107,29 @@ function buildFilterObject(searchParams: URLSearchParams) {
 }
 
 function buildSortObject(searchParams: URLSearchParams) {
-  const sortObj = {};
-  if (searchParams.get("sortById")) sortObj.id = searchParams.get("sortById");
+  const sortObj: z.infer<typeof postSortObjSchema> = {};
+  if (searchParams.get("sortById")) sortObj.id = searchParams.get("sortById") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByCreatedAt"))
-    sortObj.createdAt = searchParams.get("sortByCreatedAt");
+    sortObj.createdAt = searchParams.get("sortByCreatedAt") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByUpdatedAt"))
-    sortObj.updatedAt = searchParams.get("sortByUpdatedAt");
+    sortObj.updatedAt = searchParams.get("sortByUpdatedAt") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortBytype"))
-    sortObj.type = searchParams.get("sortBytype");
+    sortObj.type = searchParams.get("sortBytype") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByCredits"))
-    sortObj.credits = searchParams.get("sortByCredits");
+    sortObj.credits = searchParams.get("sortByCredits") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByIsApproved"))
-    sortObj.isApproved = searchParams.get("sortByIsApproved");
+    sortObj.isApproved = searchParams.get("sortByIsApproved") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByAuthorId"))
-    sortObj.authorId = searchParams.get("sortByAuthorId");
+    sortObj.authorId = searchParams.get("sortByAuthorId") as z.infer<typeof sortTypes>;
 
   return sortObj;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   try {
+    const session = await auth();
+    if (!session || !session.user)
+      return Response.json({ error: "Unauthenticated" }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const page = searchParams.get("page") || "1";
     const size = searchParams.get("size") || "10";
@@ -139,11 +147,29 @@ export async function GET(req: NextRequest) {
     });
     return Response.json({ posts }, { status: 200 });
   } catch (error) {
-    if(error instanceof z.ZodError) {
+    if (error instanceof z.ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
     }
     return Response.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {}
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    if (!session || !session.user)
+      return Response.json({ error: "Unauthenticated" }, { status: 401 });
+
+    const reqObj = await req.json();
+    const parsedReqObj = postCreateSchema.parse(reqObj);
+    await prisma.post.create({
+      data: parsedReqObj,
+    });
+    return Response.json({}, { status: 204 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Response.json({ error: error.issues }, { status: 400 });
+    }
+    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
