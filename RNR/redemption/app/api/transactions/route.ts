@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { transactionCreateReqSchema } from "@/lib/zod";
+import { transactionCreateReqSchema, postFilterObjSchema, postTypes, postSortObjSchema, sortTypes } from "@/lib/zod";
 import { prismaErrorHandler } from "@/utils/prisma-error-handler";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import z from "zod";
@@ -134,7 +134,11 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     await prisma.transaction.create({
-      data: parsedReqObj,
+      data: {
+        postId: parsedReqObj.postId,
+        buyer: { connect: { id: parsedReqObj.buyerId } },
+        seller: { connect: { id: parsedReqObj.sellerId } }
+      },
     });
     return Response.json({}, { status: 204 });
   } catch (error) {

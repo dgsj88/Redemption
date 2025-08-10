@@ -19,7 +19,7 @@ export const userUpdateReqObjSchema = z.object({
   email: z.email().trim().min(5).max(255).optional(),
   role: userRoles.default("USER").optional(),
   credits: z.int().default(0).optional(),
-  isActive: z.boolean().default(true).optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const userIdSchema = z.cuid().trim();

@@ -9,13 +9,28 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Notification } from "@/components/notification"
-import {
-  getAllRecyclingSubmissions,
-  approveRecyclingSubmission,
-  rejectRecyclingSubmission,
-  addMarketplaceItem,
-  type RecyclingSubmission,
-} from "@/lib/user-database"
+
+// import { getAllRecyclingSubmissions, approveRecyclingSubmission, rejectRecyclingSubmission } from "../../api/transactions/route"
+
+// Define the RecyclingSubmission
+export type RecyclingSubmission = {
+  id: string
+  name: string
+  userEmail: string
+  userName?: string
+  itemType: string
+  quantity: number
+  location?: string
+  submittedDate: string
+  estimatedCredits: number
+  actualCredits?: number
+  description?: string
+  isApproved: boolean
+  reviewedBy?: string
+  reviewedDate?: string
+  reviewNotes?: string
+  status: "pending" | "approved" | "rejected"
+}
 
 interface AdminSubmissionsProps {
   onBack: () => void
@@ -46,9 +61,17 @@ export function AdminSubmissions({ onBack }: AdminSubmissionsProps) {
     tags: [] as string[],
   })
 
+  // Add currentView state
+  const [currentView, setCurrentView] = useState("submissions")
+
   useEffect(() => {
-    loadSubmissions()
-  }, [])
+    if (currentView === "post") {
+      fetch("/api/posts?isApproved=true&sortByCreatedAt=desc")
+        .then((res) => res.json())
+        .then((data) => setPosts(data.posts))
+        .catch((err) => console.error("Failed to fetch posts:", err));
+    }
+  }, [currentView]);    
 
   const loadSubmissions = () => {
     const allSubmissions = getAllRecyclingSubmissions()
@@ -71,7 +94,7 @@ export function AdminSubmissions({ onBack }: AdminSubmissionsProps) {
 
     if (success) {
       addNotification(
-        `Submission approved! ${actualCredits} credits awarded to ${selectedSubmission.userName}`,
+        `Submission approved! ${actualCredits} credits awarded to ${selectedSubmission.name}`,
         "success",
       )
       loadSubmissions()
@@ -101,21 +124,8 @@ export function AdminSubmissions({ onBack }: AdminSubmissionsProps) {
       return
     }
 
-    const newItem = addMarketplaceItem({
-      title: marketplaceFormData.title,
-      description: marketplaceFormData.description,
-      category: marketplaceFormData.category || "General",
-      condition: marketplaceFormData.condition,
-      images: ["/placeholder.svg?height=300&width=300&query=" + encodeURIComponent(marketplaceFormData.title)],
-      creditPrice: marketplaceFormData.creditPrice,
-      isAvailable: true,
-      sellerName: "Redemption Store",
-      specifications: marketplaceFormData.specifications,
-      tags: marketplaceFormData.tags,
-      originalSubmissionId: selectedSubmission?.id,
-    })
-
-    addNotification(`Item "${newItem.title}" added to marketplace for ${newItem.creditPrice} credits`, "success")
+    // TODO: Implement marketplace item addition logic here, e.g. call an API or use the correct function from user-database.
+    addNotification(`Item "${marketplaceFormData.title}" added to marketplace for ${marketplaceFormData.creditPrice} credits`, "success")
     setShowMarketplaceForm(false)
     setMarketplaceFormData({
       title: "",
@@ -131,7 +141,7 @@ export function AdminSubmissions({ onBack }: AdminSubmissionsProps) {
   const filteredSubmissions = submissions.filter((submission) => {
     const matchesStatus = statusFilter === "all" || submission.status === statusFilter
     const matchesSearch =
-      submission.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      submission.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       submission.itemType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       submission.userEmail.toLowerCase().includes(searchTerm.toLowerCase())
     return matchesStatus && matchesSearch
@@ -273,7 +283,7 @@ export function AdminSubmissions({ onBack }: AdminSubmissionsProps) {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <h4 className="font-semibold">{submission.userName}</h4>
+                          <h4 className="font-semibold">{submission.name}</h4>
                           <p className="text-sm text-gray-600">{submission.userEmail}</p>
                         </div>
                         <Badge className={getStatusColor(submission.status)}>{submission.status}</Badge>
@@ -321,7 +331,7 @@ export function AdminSubmissions({ onBack }: AdminSubmissionsProps) {
                     <h4 className="font-semibold mb-2">Submission Details</h4>
                     <div className="space-y-2 text-sm">
                       <div>
-                        <span className="font-medium">User:</span> {selectedSubmission.userName}
+                        <span className="font-medium">User:</span> {selectedSubmission.name}
                       </div>
                       <div>
                         <span className="font-medium">Email:</span> {selectedSubmission.userEmail}
@@ -562,3 +572,62 @@ export function AdminSubmissions({ onBack }: AdminSubmissionsProps) {
     </div>
   )
 }
+function setPosts(posts: any): any {
+  throw new Error("Function not implemented.")
+}
+
+function getAllRecyclingSubmissions(): RecyclingSubmission[] {
+  // TODO: Replace with actual implementation to fetch submissions
+  return []
+}
+function approveRecyclingSubmission(
+  id: string,
+  actualCredits: number,
+  reviewNotes: string,
+  reviewedBy: string
+): boolean {
+  // Simulate updating the submission in a database
+  // In a real app, this would be an API call
+  const submissions = getAllRecyclingSubmissions()
+  const index = submissions.findIndex((s) => s.id === id)
+  if (index === -1) return false
+
+  submissions[index] = {
+    ...submissions[index],
+    isApproved: true,
+    status: "approved",
+    actualCredits,
+    reviewNotes,
+    reviewedBy,
+    reviewedDate: new Date().toISOString(),
+  }
+  // Simulate saving to database
+  // e.g. localStorage.setItem("submissions", JSON.stringify(submissions))
+  return true
+}
+
+// Add rejectRecyclingSubmission implementation
+function rejectRecyclingSubmission(
+  id: string,
+  reviewNotes: string,
+  reviewedBy: string
+): boolean {
+  // Simulate updating the submission in a database
+  // In a real app, this would be an API call
+  const submissions = getAllRecyclingSubmissions()
+  const index = submissions.findIndex((s) => s.id === id)
+  if (index === -1) return false
+
+  submissions[index] = {
+    ...submissions[index],
+    isApproved: false,
+    status: "rejected",
+    reviewNotes,
+    reviewedBy,
+    reviewedDate: new Date().toISOString(),
+  }
+  // Simulate saving to database
+  // e.g. localStorage.setItem("submissions", JSON.stringify(submissions))
+  return true
+}
+

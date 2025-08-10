@@ -1,97 +1,121 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { AdminSubmissions } from "@/app/dashboard/_components/admin-submissions"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AdminSubmissions } from "@/app/dashboard/_components/admin-submissions";
 // import { SMTPConfigPage } from "@/app/dashboard/_components/smtp-config-page"
-import { postTypes } from "@/lib/zod"
-import z from "zod"
-import { RecyclingSubmissionModal } from "@/app/dashboard/_components/recycling-submission-modal"
+import { postTypes } from "@/lib/zod";
+import z, { boolean } from "zod";
+import { RecyclingSubmissionModal } from "@/app/dashboard/_components/recycling-submission-modal";
 
 // Define the Submission type
 type Submission = {
-  id: string
-  type: string
-  author: string
-  createdAt: string
-  isApproved: "true" | "false"
-  credits: number
-}
+  id: string;
+  type: string;
+  author: string;
+  createdAt: string;
+  isApproved: boolean;
+  credits: number;
+};
 
 // DatabaseUser type definition
 type DatabaseUser = {
-  id: string
-  name: string
-  email: string
-  role: "USER" | "ADMIN"
-  isActive: "true" | "false"
-  credits: number
-  createdAt: string
-}
+  id: string;
+  name: string;
+  email: string;
+  role: "USER" | "ADMIN";
+  isActive: boolean;
+  credits: number;
+  createdAt: string;
+};
 
-
-function updateUser(users: DatabaseUser[], userId: string, updates: Partial<DatabaseUser>) {
+function updateUser(
+  users: DatabaseUser[],
+  userId: string,
+  updates: Partial<DatabaseUser>
+) {
   // Find the user and update properties (mock logic)
-  const user = users.find((u) => u.id === userId)
-  if (!user) return null
-  return { ...user, ...updates }
+  const user = users.find((u) => u.id === userId);
+  if (!user) return null;
+  return { ...user, ...updates };
 }
 
 interface AdminDashboardProps {
-  onLogout: () => void
+  onLogout: () => void;
 }
 
 export function AdminDashboard() {
-  const [currentView, setCurrentView] = useState<"dashboard" | "submissions" | "users" | "marketplace">(
-    "dashboard",
-  )
-  const [users, setUsers] = useState<DatabaseUser[]>([])
-  const [submissions, setSubmissions] = useState<Submission[]>([])
-  const [marketplaceItems, setMarketplaceItems] = useState<any[]>([])
+  const [currentView, setCurrentView] = useState<
+    "dashboard" | "submissions" | "users" | "marketplace"
+  >("dashboard");
+  const [users, setUsers] = useState<DatabaseUser[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [marketplaceItems, setMarketplaceItems] = useState<any[]>([]);
   // const [selectedUser, setSelectedUser] = useState<DatabaseUser | null>(null)
 
   useEffect(() => {
     if (currentView === "users") {
-      fetch("/api/users?isActive=true&sortByName=asc")
+      fetch("/api/users?id!=null&sortByEmail=asc")
         .then((res) => res.json())
         .then((data) => setUsers(data.users))
         .catch((err) => console.error("Failed to fetch users:", err));
     }
-  }, [currentView]);    
-    // Load data
-    // setUsers(getAllUsers())
-    // setSubmissions(getAllSubmissions())
-    // setMarketplaceItems(getAllMarketplaceItems())
+  }, [currentView]);
+  // Load data
+  // setUsers(getAllUsers())
+  // setSubmissions(getAllSubmissions())
+  // setMarketplaceItems(getAllMarketplaceItems())
 
   const handleUserRoleChange = (userId: string, newRole: "USER" | "ADMIN") => {
-    const updatedUser = updateUser(users, userId, { role: newRole })
+    const updatedUser = updateUser(users, userId, { role: newRole });
     if (updatedUser) {
-      setUsers((prev) => prev.map((user) => (user.id === userId ? updatedUser : user)))
-      console.log(`👤 USER ROLE UPDATED: ${updatedUser.email} is now ${newRole}`)
+      setUsers((prev) =>
+        prev.map((user) => (user.id === userId ? updatedUser : user))
+      );
+      console.log(
+        `👤 USER ROLE UPDATED: ${updatedUser.email} is now ${newRole}`
+      );
     }
-  }
+  };
 
-  const handleUserStatusChange = (userId: string, newStatus: "true" | "false") => {
-    const updatedUser = updateUser(users, userId, { isActive: newStatus })
+  const handleUserStatusChange = (
+    userId: string,
+    newStatus: "true" | "false"
+  ) => {
+    const updatedUser = updateUser(users, userId,  {isActive: newStatus === "true"});
     if (updatedUser) {
-      setUsers((prev) => prev.map((user) => (user.id === userId ? updatedUser : user)))
-      console.log(`👤 USER STATUS UPDATED: ${updatedUser.email} is now ${newStatus}`)
+      setUsers((prev) =>
+        prev.map((user) => (user.id === userId ? updatedUser : user))
+      );
+      console.log(
+        `👤 USER STATUS UPDATED: ${updatedUser.email} is now ${newStatus}`
+      );
     }
-  }
+  };
 
   const getStats = () => {
-    const totalUsers = users.length
-    const adminUsers = users.filter((u) => u.role === "ADMIN").length
+    const totalUsers = users.length;
+    const adminUsers = users.filter((u) => u.role === "ADMIN").length;
     // const approverUsers = users.filter((u) => u.userRole === "approver").length
-    const activeUsers = users.filter((u) => u.isActive === "true").length
-    const pendingSubmissions = submissions.filter((s) => s.isApproved === "false").length
-    const approvedSubmissions = submissions.filter((s) => s.isApproved === "true").length
+    const activeUsers = users.filter((u) => u.isActive === true).length;
+    const pendingSubmissions = submissions.filter(
+      (s) => s.isApproved === false
+    ).length;
+    const approvedSubmissions = submissions.filter(
+      (s) => s.isApproved === true
+    ).length;
     const totalCreditsAwarded = submissions
-      .filter((s) => s.isApproved === "true")
-      .reduce((sum, s) => sum + (s.credits), 0)
-    const marketplaceItemsCount = marketplaceItems.length
+      .filter((s) => s.isApproved === true)
+      .reduce((sum, s) => sum + s.credits, 0);
+    const marketplaceItemsCount = marketplaceItems.length;
 
     return {
       totalUsers,
@@ -102,10 +126,10 @@ export function AdminDashboard() {
       approvedSubmissions,
       totalCreditsAwarded,
       marketplaceItemsCount,
-    }
-  }
+    };
+  };
 
-  const stats = getStats()
+  const stats = getStats();
 
   // if (currentView === "smtp") {
   //   return <SMTPConfigPage onBack={() => setCurrentView("dashboard")} />
@@ -127,8 +151,12 @@ export function AdminDashboard() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-            <p className="text-gray-600">Manage users, submissions, and system settings</p>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Admin Dashboard
+            </h1>
+            <p className="text-gray-600">
+              Manage users, submissions, and system settings
+            </p>
           </div>
           <div className="flex gap-2">
             {/* <Button
@@ -136,7 +164,7 @@ export function AdminDashboard() {
               variant="outline"
               className="text-red-600 border-red-600 hover:bg-red-50 bg-transparent"
             > */}
-              {/* Logout
+            {/* Logout
             </Button> */}
           </div>
         </div>
@@ -155,7 +183,10 @@ export function AdminDashboard() {
           >
             Submissions ({stats.pendingSubmissions})
           </Button>
-          <Button onClick={() => setCurrentView("users")} variant={currentView === "users" ? "default" : "outline"}>
+          <Button
+            onClick={() => setCurrentView("users")}
+            variant={currentView === "users" ? "default" : "outline"}
+          >
             Users
           </Button>
           <Button
@@ -176,8 +207,15 @@ export function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                  <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <CardTitle className="text-sm font-medium">
+                    Total Users
+                  </CardTitle>
+                  <svg
+                    className="h-4 w-4 text-muted-foreground"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -196,8 +234,15 @@ export function AdminDashboard() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pending Submissions</CardTitle>
-                  <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <CardTitle className="text-sm font-medium">
+                    Pending Submissions
+                  </CardTitle>
+                  <svg
+                    className="h-4 w-4 text-muted-foreground"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -207,15 +252,26 @@ export function AdminDashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.pendingSubmissions}</div>
-                  <p className="text-xs text-muted-foreground">{stats.approvedSubmissions} approved total</p>
+                  <div className="text-2xl font-bold">
+                    {stats.pendingSubmissions}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.approvedSubmissions} approved total
+                  </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Credits Awarded</CardTitle>
-                  <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <CardTitle className="text-sm font-medium">
+                    Credits Awarded
+                  </CardTitle>
+                  <svg
+                    className="h-4 w-4 text-muted-foreground"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -225,15 +281,26 @@ export function AdminDashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${stats.totalCreditsAwarded.toFixed(2)}</div>
-                  <p className="text-xs text-muted-foreground">Total credits distributed</p>
+                  <div className="text-2xl font-bold">
+                    ${stats.totalCreditsAwarded.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Total credits distributed
+                  </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Marketplace Items</CardTitle>
-                  <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <CardTitle className="text-sm font-medium">
+                    Marketplace Items
+                  </CardTitle>
+                  <svg
+                    className="h-4 w-4 text-muted-foreground"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -243,8 +310,12 @@ export function AdminDashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.marketplaceItemsCount}</div>
-                  <p className="text-xs text-muted-foreground">Available for purchase</p>
+                  <div className="text-2xl font-bold">
+                    {stats.marketplaceItemsCount}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Available for purchase
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -261,7 +332,12 @@ export function AdminDashboard() {
                     onClick={() => setCurrentView("submissions")}
                     className="h-20 flex flex-col items-center justify-center space-y-2"
                   >
-                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="h-6 w-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -277,7 +353,12 @@ export function AdminDashboard() {
                     variant="outline"
                     className="h-20 flex flex-col items-center justify-center space-y-2"
                   >
-                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="h-6 w-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -293,7 +374,12 @@ export function AdminDashboard() {
                     variant="outline"
                     className="h-20 flex flex-col items-center justify-center space-y-2"
                   >
-                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="h-6 w-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -327,28 +413,34 @@ export function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest system activity and submissions</CardDescription>
+                <CardDescription>
+                  Latest system activity and submissions
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {submissions.slice(0, 5).map((submission) => (
-                    <div key={submission.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div
+                      key={submission.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
                       <div className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                         <div>
                           <p className="font-medium">{submission.type}</p>
                           <p className="text-sm text-gray-600">
-                            Submitted by {submission.author} • {submission.createdAt}
+                            Submitted by {submission.author} •{" "}
+                            {submission.createdAt}
                           </p>
                         </div>
                       </div>
                       <Badge
                         variant={
-                          submission.isApproved === "true"
+                          submission.isApproved
                             ? "default"
-                            : submission.isApproved === "false"
-                              ? "destructive"
-                              : "secondary"
+                            : submission.isApproved
+                            ? "destructive"
+                            : "secondary"
                         }
                       >
                         {submission.isApproved}
@@ -366,28 +458,41 @@ export function AdminDashboard() {
           <Card>
             <CardHeader>
               <CardTitle>User Management</CardTitle>
-              <CardDescription>Manage user accounts, roles, and permissions</CardDescription>
+              <CardDescription>
+                Manage user accounts, roles, and permissions
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {users.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium">{user.email.charAt(0).toUpperCase()}</span>
+                        <span className="text-sm font-medium">
+                          {user.email.charAt(0).toUpperCase()}
+                        </span>
                       </div>
                       <div>
                         <p className="font-medium">{user.name || user.email}</p>
                         <p className="text-sm text-gray-600">{user.email}</p>
                         <p className="text-xs text-gray-500">
-                          Credits: ${user.credits.toFixed(2)} • Joined: {user.createdAt}
+                          Credits: ${user.credits.toFixed(2)} • Joined:{" "}
+                          {user.createdAt}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <select
                         value={user.role}
-                        onChange={(e) => handleUserRoleChange(user.id, e.target.value as "USER" | "ADMIN")}
+                        onChange={(e) =>
+                          handleUserRoleChange(
+                            user.id,
+                            e.target.value as "USER" | "ADMIN"
+                          )
+                        }
                         className="px-3 py-1 border rounded text-sm"
                       >
                         <option value="USER">User</option>
@@ -395,9 +500,12 @@ export function AdminDashboard() {
                         <option value="ADMIN">Admin</option>
                       </select>
                       <select
-                        value={user.isActive}
+                        value={user.isActive ? "true" : "false"}
                         onChange={(e) =>
-                          handleUserStatusChange(user.id, e.target.value as "true" | "false")
+                          handleUserStatusChange(
+                            user.id,
+                            e.target.value as "true" | "false"
+                          )
                         }
                         className="px-3 py-1 border rounded text-sm"
                       >
@@ -410,8 +518,8 @@ export function AdminDashboard() {
                           user.role === "ADMIN"
                             ? "destructive"
                             : user.role === "USER"
-                              ? "default"
-                              : "secondary"
+                            ? "default"
+                            : "secondary"
                         }
                       >
                         {user.role}
@@ -429,7 +537,9 @@ export function AdminDashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Marketplace Management</CardTitle>
-              <CardDescription>Manage marketplace items and transactions</CardDescription>
+              <CardDescription>
+                Manage marketplace items and transactions
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -439,14 +549,20 @@ export function AdminDashboard() {
                       <span className="text-gray-500">No Image</span>
                     </div>
                     <h3 className="font-medium">{item.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {item.description}
+                    </p>
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold">${item.price.toFixed(2)}</span>
+                      <span className="font-semibold">
+                        ${item.price.toFixed(2)}
+                      </span>
                       <Badge variant={item.available ? "default" : "secondary"}>
                         {item.available ? "Available" : "Sold Out"}
                       </Badge>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Added: {item.dateAdded}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Added: {item.dateAdded}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -455,5 +571,5 @@ export function AdminDashboard() {
         )}
       </div>
     </div>
-  )
+  );
 }
