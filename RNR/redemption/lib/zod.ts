@@ -158,7 +158,7 @@ export const transactionCreateReqSchema = z.object({
   postId: postIdSchema,
 });
 
-export const transactionFilterObjectSchema = z.object({
+export const transactionFilterObjSchema = z.object({
   id: transactionIdSchema.optional(),
   createdAt: z
     .object({
@@ -176,5 +176,10 @@ export const transactionFilterObjectSchema = z.object({
 });
 
 export const transactionSortObjectSchema = z.object({
-  
+  id: sortTypes.optional(),
+  createdAt: sortTypes.optional(),
+  buyerId: sortTypes.optional(),
+  sellerId: sortTypes.optional(),
+  postId: sortTypes.optional(),
+  post: postSortObjSchema.optional()
 });

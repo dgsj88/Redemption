@@ -113,8 +113,8 @@ function buildSortObject(searchParams: URLSearchParams) {
     sortObj.createdAt = searchParams.get("sortByCreatedAt") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByUpdatedAt"))
     sortObj.updatedAt = searchParams.get("sortByUpdatedAt") as z.infer<typeof sortTypes>;
-  if (searchParams.get("sortBytype"))
-    sortObj.type = searchParams.get("sortBytype") as z.infer<typeof sortTypes>;
+  if (searchParams.get("sortByType"))
+    sortObj.type = searchParams.get("sortByType") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByCredits"))
     sortObj.credits = searchParams.get("sortByCredits") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByIsApproved"))
