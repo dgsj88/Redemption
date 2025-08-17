@@ -1,84 +1,63 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { getUserByEmail } from "@/lib/user"
-import { getSMTPConfig, getPasswordResetEmailTemplate, simulateEmailSend } from "@/lib/smtp-config"
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 
-const PasswordResetPage = () => {
-  const [email, setEmail] = useState("")
-  const [message, setMessage] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setMessage("")
-
-    try {
-      const user = getUserByEmail(email)
-      if (!user) {
-        setMessage("If an account with this email exists, you will receive a password reset link.")
-        setIsLoading(false)
-        return
-      }
-
-      // Generate reset token and URL
-      const resetToken = Math.random().toString(36).substring(2, 15)
-      const resetUrl = `${window.location.origin}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`
-
-      // Try to send email via SMTP
-      const smtpConfig = getSMTPConfig()
-      if (smtpConfig && smtpConfig.isEnabled) {
-        const emailTemplate = getPasswordResetEmailTemplate(user.name, resetUrl)
-        const emailResult = await simulateEmailSend(email, emailTemplate, smtpConfig)
-
-        if (emailResult.success) {
-          console.log(`📧 PASSWORD RESET EMAIL SENT via SMTP to ${email}`)
-          setMessage("Password reset instructions have been sent to your email address.")
-        } else {
-          console.log(`❌ SMTP EMAIL FAILED: ${emailResult.error}`)
-          console.log(`📧 FALLBACK: Password reset link: ${resetUrl}`)
-          setMessage("Password reset instructions have been sent to your email address.")
-        }
-      } else {
-        // Fallback to console logging
-        console.log(`📧 SMTP NOT CONFIGURED - Password reset link: ${resetUrl}`)
-        setMessage("Password reset instructions have been sent to your email address.")
-      }
-
-      // Store reset token (in real app, this would be in database with expiration)
-      localStorage.setItem(
-        `reset_token_${email}`,
-        JSON.stringify({
-          token: resetToken,
-          expires: Date.now() + 3600000, // 1 hour
-        }),
-      )
-    } catch (error) {
-      setMessage("An error occurred. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  return (
-    <div>
-      <h1>Password Reset</h1>
-      {message && <p>{message}</p>}
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="email">Email:</label>
-        <input type="email" id="email" value={email} onChange={handleChange} required />
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? "Sending..." : "Reset Password"}
-        </button>
-      </form>
-    </div>
-  )
+function isValidEmail(email: string) {
+  // Simple email validation regex
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export default PasswordResetPage
+export function PasswordResetPage() {
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get("referral") || "";
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    const res = await fetch("/api/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email}),
+    });
+    if (res.ok) {
+      setMessage("Password reset link sent to your verified email address!");
+    } else if (res.status === 404) {
+      setError("Email address cannot be found.");
+    } else {
+      setError("Failed to send reset link.");
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
+      <h2 className="text-xl font-bold mb-4">Request Password Reset</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="email"
+          placeholder="Email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+          required
+        />    
+        {error && <p className="text-red-600 text-sm">{error}</p>}
+        <button
+          type="submit"
+          className="w-full bg-green-600 text-white py-2 rounded"
+        >
+          Send Reset Link
+        </button>
+      </form>
+      {message && <p className="mt-4 text-center">{message}</p>}
+    </div>
+  );
+}

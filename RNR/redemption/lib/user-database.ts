@@ -1,15 +1,38 @@
-export interface User {
-  id: string
-  email: string
-  password: string
-  name: string
-  role: "user" | "admin" | "approver"
-  credits: number
-  isActive: boolean
-  createdDate: string
-  lastLogin?: string
-  resetToken?: string
-  resetTokenExpiry?: string
+export interface DatabaseUser {
+  id: string;
+  email: string;
+  name: string;
+  credits: number;
+  isActive: boolean;
+  role: "USER" | "ADMIN";
+  createdAt: string;
+  lastLogin?: string;
+  resetToken?: string;
+  resetTokenExpiry?: string;
+}
+
+export interface Post{
+  id: string;
+  desc: string;
+  author: string;
+  createdAt: string;
+  updatedAt: string;
+  type: string;
+  isApproved: boolean;
+  credits: number;
+  isAvailable: boolean;
+  quantity: number;
+}
+
+export interface Submission {
+  id: string;
+  type: string;
+  author: string;
+  createdAt: string;
+  isApproved: boolean;
+  credits: number;
+  quantity: number;
+  location: string;
 }
 
 export interface RecyclingSubmission {
@@ -24,6 +47,10 @@ export interface RecyclingSubmission {
   submissionDate: string
   reviewDate?: string
   reviewedBy?: string
+  quantity: number
+  location: string
+  actualCredits: number
+  estimatedCredits: number
 }
 
 export interface MarketplaceItem {
@@ -64,94 +91,97 @@ export interface Purchase {
 
 // In-memory storage (in real app, this would be a database)
 
+// User storage
+const users: DatabaseUser[] = []
+
 const recyclingSubmissions: RecyclingSubmission[] = [
-  {
-    id: "sub_1",
-    userId: "user_1",
-    itemType: "Plastic Bottles",
-    description: "5 plastic water bottles, clean and labels removed",
-    imageUrl: "/placeholder.svg?height=200&width=300&text=Plastic+Bottles",
-    status: "pending",
-    submissionDate: "2024-01-15",
-  },
-  {
-    id: "sub_2",
-    userId: "user_1",
-    itemType: "Aluminum Cans",
-    description: "10 aluminum soda cans, crushed for space efficiency",
-    imageUrl: "/placeholder.svg?height=200&width=300&text=Aluminum+Cans",
-    status: "approved",
-    creditsAwarded: 50,
-    reviewNotes: "Great submission! Items are clean and properly prepared.",
-    submissionDate: "2024-01-10",
-    reviewDate: "2024-01-12",
-    reviewedBy: "approver_1",
-  },
+  // {
+  //   id: "sub_1",
+  //   userId: "user_1",
+  //   itemType: "Plastic Bottles",
+  //   description: "5 plastic water bottles, clean and labels removed",
+  //   imageUrl: "/placeholder.svg?height=200&width=300&text=Plastic+Bottles",
+  //   status: "pending",
+  //   submissionDate: "2024-01-15",
+  // },
+  // {
+  //   id: "sub_2",
+  //   userId: "user_1",
+  //   itemType: "Aluminum Cans",
+  //   description: "10 aluminum soda cans, crushed for space efficiency",
+  //   imageUrl: "/placeholder.svg?height=200&width=300&text=Aluminum+Cans",
+  //   status: "approved",
+  //   creditsAwarded: 50,
+  //   reviewNotes: "Great submission! Items are clean and properly prepared.",
+  //   submissionDate: "2024-01-10",
+  //   reviewDate: "2024-01-12",
+  //   reviewedBy: "approver_1",
+  // },
 ]
 
 const marketplaceItems: MarketplaceItem[] = [
-  {
-    id: "item_1",
-    name: "Eco-Friendly Water Bottle",
-    description: "Reusable stainless steel water bottle with insulation",
-    price: 75,
-    imageUrl: "/placeholder.svg?height=200&width=300&text=Water+Bottle",
-    category: "Drinkware",
-    isAvailable: true,
-    stock: 25,
-    createdDate: "2024-01-01",
-    addedBy: "admin_1",
-  },
-  {
-    id: "item_2",
-    name: "Bamboo Utensil Set",
-    description: "Portable bamboo fork, knife, and spoon with carrying case",
-    price: 45,
-    imageUrl: "/placeholder.svg?height=200&width=300&text=Bamboo+Utensils",
-    category: "Kitchenware",
-    isAvailable: true,
-    stock: 50,
-    createdDate: "2024-01-01",
-    addedBy: "admin_1",
-  },
-  {
-    id: "item_3",
-    name: "Organic Cotton Tote Bag",
-    description: "Durable organic cotton shopping bag with reinforced handles",
-    price: 30,
-    imageUrl: "/placeholder.svg?height=200&width=300&text=Tote+Bag",
-    category: "Bags",
-    isAvailable: true,
-    stock: 100,
-    createdDate: "2024-01-01",
-    addedBy: "admin_1",
-  },
+  // {
+  //   id: "item_1",
+  //   name: "Eco-Friendly Water Bottle",
+  //   description: "Reusable stainless steel water bottle with insulation",
+  //   price: 75,
+  //   imageUrl: "/placeholder.svg?height=200&width=300&text=Water+Bottle",
+  //   category: "Drinkware",
+  //   isAvailable: true,
+  //   stock: 25,
+  //   createdDate: "2024-01-01",
+  //   addedBy: "admin_1",
+  // },
+  // {
+  //   id: "item_2",
+  //   name: "Bamboo Utensil Set",
+  //   description: "Portable bamboo fork, knife, and spoon with carrying case",
+  //   price: 45,
+  //   imageUrl: "/placeholder.svg?height=200&width=300&text=Bamboo+Utensils",
+  //   category: "Kitchenware",
+  //   isAvailable: true,
+  //   stock: 50,
+  //   createdDate: "2024-01-01",
+  //   addedBy: "admin_1",
+  // },
+  // {
+  //   id: "item_3",
+  //   name: "Organic Cotton Tote Bag",
+  //   description: "Durable organic cotton shopping bag with reinforced handles",
+  //   price: 30,
+  //   imageUrl: "/placeholder.svg?height=200&width=300&text=Tote+Bag",
+  //   category: "Bags",
+  //   isAvailable: true,
+  //   stock: 100,
+  //   createdDate: "2024-01-01",
+  //   addedBy: "admin_1",
+  // },
 ]
 
 const creditTransactions: CreditTransaction[] = [
-  {
-    id: "trans_1",
-    userId: "user_1",
-    type: "earned",
-    amount: 50,
-    description: "Credits earned from aluminum cans submission",
-    relatedSubmissionId: "sub_2",
-    date: "2024-01-12",
-  },
+  // {
+  //   id: "trans_1",
+  //   userId: "user_1",
+  //   type: "earned",
+  //   amount: 50,
+  //   description: "Credits earned from aluminum cans submission",
+  //   relatedSubmissionId: "sub_2",
+  //   date: "2024-01-12",
+  // },
 ]
 
 const purchases: Purchase[] = []
 
 // User Management Functions
-export function createUser(userData: Omit<User, "id" | "createdDate">): User {
-  const newUser: User = {
+export function createUser(userData: Omit<DatabaseUser, "id" | "createdDate">): DatabaseUser {
+  const newUser: DatabaseUser = {
     id: `user_${Date.now()}`,
-    createdDate: new Date().toISOString().split("T")[0],
+    // createdAt: new Date().toISOString().split("T")[0],
     ...userData,
   }
-
-  user.push(newUser)
+  users.push(newUser)
   console.log(`👤 USER CREATED: ${newUser.email} (${newUser.role})`)
+  return { ...newUser }
   return { ...newUser }
 }
 
@@ -159,7 +189,7 @@ export function registerUser(userData: {
   email: string
   password: string
   name: string
-}): { success: boolean; user?: User; error?: string } {
+}): { success: boolean; user?: DatabaseUser; error?: string } {
   // Check if user already exists
   const existingUser = getUserByEmail(userData.email)
   if (existingUser) {
@@ -192,7 +222,7 @@ export function registerUser(userData: {
       email: userData.email.toLowerCase().trim(),
       password: userData.password, // In real app, this would be hashed
       name: userData.name.trim(),
-      role: "user",
+      role: "USER",
       credits: 0, // New users start with 0 credits
       isActive: true,
     })

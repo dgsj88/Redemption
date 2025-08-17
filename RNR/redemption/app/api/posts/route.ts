@@ -24,6 +24,9 @@ function buildFilterObject(searchParams: URLSearchParams) {
   //isApproved filter
   const isApprovedFilter = searchParams.get("isApproved");
 
+  //isAvailable filter
+  const isAvailableFilter = searchParams.get("isAvailable");
+
   //createdAt filters
   const createdAtGteFilter = searchParams.get("createdAtGte");
   const createdAtLteFilter = searchParams.get("createdAtLte");

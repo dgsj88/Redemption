@@ -15,27 +15,45 @@ import { AdminSubmissions } from "@/app/dashboard/_components/admin-submissions"
 import { postTypes } from "@/lib/zod";
 import z, { boolean } from "zod";
 import { RecyclingSubmissionModal } from "@/app/dashboard/_components/recycling-submission-modal";
+import {DatabaseUser} from "@/lib/user-database";
+import { Submission } from "@/lib/user-database";
+import { Post } from "@/lib/user-database";
 
 // Define the Submission type
-type Submission = {
-  id: string;
-  type: string;
-  author: string;
-  createdAt: string;
-  isApproved: boolean;
-  credits: number;
-};
+// type Submission = {
+//   id: string;
+//   type: string;
+//   author: string;
+//   createdAt: string;
+//   isApproved: boolean;
+//   credits: number;
+//   quantity: number;
+// };
 
 // DatabaseUser type definition
-type DatabaseUser = {
-  id: string;
-  name: string;
-  email: string;
-  role: "USER" | "ADMIN";
-  isActive: boolean;
-  credits: number;
-  createdAt: string;
-};
+// type DatabaseUser = {
+//   id: string;
+//   name: string;
+//   email: string;
+//   role: "USER" | "ADMIN";
+//   isActive: boolean;
+//   credits: number;
+//   createdAt: string;
+// };
+
+// Post type definition
+// type Post = {
+//   id: string;
+//   desc: string;
+//   author: string;
+//   createdAt: string;
+//   updatedAt: string;
+//   type: string;
+//   isApproved: boolean;
+//   credits: number;
+//   isAvailable: boolean;
+//   quantity: number;
+// };
 
 function updateUser(
   users: DatabaseUser[],
@@ -58,9 +76,62 @@ export function AdminDashboard() {
   >("dashboard");
   const [users, setUsers] = useState<DatabaseUser[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [marketplaceItems, setMarketplaceItems] = useState<any[]>([]);
+  const [marketplaceItems, setMarketplaceItems] = useState<Post[]>([]);
   // const [selectedUser, setSelectedUser] = useState<DatabaseUser | null>(null)
 
+
+interface AdminSubmissionsProps {
+  submissions: Submission[];
+  onStatusChange?: (id: string, status: boolean) => void;
+}
+
+function AdminSubmissions(props: AdminSubmissionsProps) {
+  const handleApprove = async (id: string) => {
+    await fetch(`/api/posts/${id}`, { method: "PUT", body: JSON.stringify({ isApproved: true, isAvailable: true }) });
+
+  };
+  const handleReject = async (id: string) => {
+    await fetch(`/api/posts/${id}`, { method: "PUT", body: JSON.stringify({ isApproved: false, isAvailable: false }) });
+  };
+  return (
+    <div>
+      <h2 className="text-xl font-bold mb-4">Unapproved Submissions</h2>
+      <div className="space-y-4">
+        {props.submissions.length === 0 ? (
+          <p>No unapproved submissions found.</p>
+        ) : (
+          props.submissions.map((submission) => (
+            <div key={submission.id} className="p-4 border rounded-lg flex justify-between items-center">
+              <div>
+                <p className="font-medium">{submission.type}</p>
+                <p className="text-sm text-gray-600">
+                  Submitted by {submission.author} • {submission.createdAt}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Credits: ${submission.credits.toFixed(2)}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  className="px-2 py-1 bg-green-500 text-white rounded"
+                  onClick={() => handleApprove(submission.id)}
+                >
+                  Approve
+                </button>
+                <button
+                  className="px-2 py-1 bg-red-500 text-white rounded"
+                  onClick={() => handleReject(submission.id)}
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
   useEffect(() => {
     if (currentView === "users") {
       fetch("/api/users?id!=null&sortByEmail=asc")
@@ -69,12 +140,50 @@ export function AdminDashboard() {
         .catch((err) => console.error("Failed to fetch users:", err));
     }
   }, [currentView]);
+
+  useEffect(() => {
+    if (currentView === "submissions") {
+      fetch("/api/posts?isApproved=false")
+        .then((res) => res.json())
+        .then((data) => setSubmissions(data.posts))
+        .catch((err) => console.error("Failed to fetch submissions:", err));
+    }
+  }, [currentView]);
+
+  useEffect(() => {
+    if (currentView === "marketplace") {
+      fetch("/api/posts?isAvailable=true&sortByCreatedAt=desc")
+        .then((res) => res.json())
+        .then((data) => setMarketplaceItems(data.posts))
+        .catch((err) => console.error("Failed to fetch marketplace items:", err));
+    }
+  }, [currentView]);
+
   // Load data
   // setUsers(getAllUsers())
   // setSubmissions(getAllSubmissions())
   // setMarketplaceItems(getAllMarketplaceItems())
 
-  const handleUserRoleChange = (userId: string, newRole: "USER" | "ADMIN") => {
+  // Handles submission approval/rejection and updates state
+  const handleSubmissionStatusChange = async (id: string, status: boolean) => {
+    await fetch(`/api/posts/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isApproved: status }),
+    });
+    setSubmissions((prev) =>
+      prev.map((submission) =>
+        (submission.id === id ? { ...submission, isApproved: status } : submission)
+      )
+    );
+  };
+
+  const handleUserRoleChange = async (userId: string, newRole: "USER" | "ADMIN") => {
+    await fetch(`/api/users/${userId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role: newRole }),
+  });
     const updatedUser = updateUser(users, userId, { role: newRole });
     if (updatedUser) {
       setUsers((prev) =>
@@ -86,11 +195,16 @@ export function AdminDashboard() {
     }
   };
 
-  const handleUserStatusChange = (
+  const handleUserStatusChange = async (
     userId: string,
     newStatus: "true" | "false"
   ) => {
-    const updatedUser = updateUser(users, userId,  {isActive: newStatus === "true"});
+    await fetch(`/api/users/${userId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ isActive: newStatus === "true" }),
+  });
+    const updatedUser = updateUser(users, userId, { isActive: newStatus === "true" });
     if (updatedUser) {
       setUsers((prev) =>
         prev.map((user) => (user.id === userId ? updatedUser : user))
@@ -453,6 +567,14 @@ export function AdminDashboard() {
           </div>
         )}
 
+        {/* Submissions View */}
+        {currentView === "submissions" && (
+          <AdminSubmissions
+            submissions={submissions}
+            onStatusChange={handleSubmissionStatusChange}
+          />
+        )}
+
         {/* Users View */}
         {currentView === "users" && (
           <Card>
@@ -480,7 +602,11 @@ export function AdminDashboard() {
                         <p className="text-sm text-gray-600">{user.email}</p>
                         <p className="text-xs text-gray-500">
                           Credits: ${user.credits.toFixed(2)} • Joined:{" "}
-                          {user.createdAt}
+                          {new Date(user.createdAt).toLocaleDateString("en-GB",{
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
                         </p>
                       </div>
                     </div>
@@ -548,20 +674,24 @@ export function AdminDashboard() {
                     <div className="aspect-square bg-gray-200 rounded-lg mb-3 flex items-center justify-center">
                       <span className="text-gray-500">No Image</span>
                     </div>
-                    <h3 className="font-medium">{item.name}</h3>
+                    <h3 className="font-medium">{item.desc}</h3>
                     <p className="text-sm text-gray-600 mb-2">
-                      {item.description}
+                      {item.desc}
                     </p>
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">
-                        ${item.price.toFixed(2)}
+                        ${item.credits.toFixed(2)}
                       </span>
-                      <Badge variant={item.available ? "default" : "secondary"}>
-                        {item.available ? "Available" : "Sold Out"}
+                      <Badge variant={item.isAvailable ? "default" : "secondary"}>
+                        {item.isAvailable ? "Available" : "Sold Out"}
                       </Badge>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Added: {item.dateAdded}
+                      Added: {new Date(item.createdAt).toLocaleDateString("en-GB",{
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </p>
                   </div>
                 ))}

@@ -19,11 +19,11 @@ export type RecyclingSubmission = {
   userEmail: string
   userName?: string
   itemType: string
-  quantity: number
-  location?: string
+  itemQuantity: number
+location: string
   submittedDate: string
   estimatedCredits: number
-  actualCredits?: number
+  actualCredits: number
   description?: string
   isApproved: boolean
   reviewedBy?: string

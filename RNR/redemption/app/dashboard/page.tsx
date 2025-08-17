@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import UserPage from "./_components/user-page";
+import { UserDashboard } from "./_components/user-dashboard";
 import { AdminDashboard } from "./_components/admin-dashboard";
 import {
   NavigationMenu,
@@ -10,6 +10,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
+import type { User } from "@/types/user"; // Adjust the import path as needed
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -39,12 +40,12 @@ export default async function DashboardPage() {
     </header>
         {isAdmin && <AdminDashboard/>}
         {!isAdmin && (
-          <UserPage
-            email={user?.email || ""}
+          <UserDashboard
+            user={user as User}
             name={user?.name || ""}
             userId={user?.id || ""}
           />
         )}
     </>
   );
-}
+}                                                                                                                                                                                                                                                         

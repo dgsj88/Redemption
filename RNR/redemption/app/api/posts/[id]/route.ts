@@ -65,7 +65,7 @@ export async function PUT(
     });
     if (!target)
       return Response.json({ error: "Post not found" }, { status: 404 });
-    if (session.user.role !== "ADMIN" || session.user.id !== target?.authorId) {
+    if (session.user.role !== "ADMIN" && session.user.id !== target?.authorId) {
       return Response.json({ error: "Unauthorized" }, { status: 403 });
     }
     await prisma.post.update({
@@ -74,7 +74,7 @@ export async function PUT(
       },
       data: parsedReq,
     });
-    return Response.json({}, { status: 204 });
+    return new Response(null, { status: 204 });
   } catch (error) {
     if (error instanceof ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
@@ -83,7 +83,7 @@ export async function PUT(
       const { error: errMsg, status } = prismaErrorHandler(error);
       return Response.json({ error: errMsg }, { status });
     }
-    return Response.json({ error }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }
 

@@ -7,73 +7,53 @@ import { Badge } from "@/components/ui/badge"
 import { RecyclingSubmissionModal } from "@/components/recycling-submission-modal"
 import { Marketplace } from "@/components/marketplace"
 import { getRecyclingSubmissionsByUser, type RecyclingSubmission } from "@/lib/user-database"
+import { DatabaseUser } from "@/lib/user-database"
+import { Post } from "@/lib/user-database"
 
-interface User {
-  id: string
-  name: string
-  email: string
-  contactNumber: string
-  creditBalance: number
+
+interface User extends DatabaseUser {
   totalItemsTraded: number
-  memberSince: string
-  accountStatus: "active" | "pending" | "suspended"
+  createdAt: string
+  isActive: boolean
 }
 
-interface TradeInItem {
-  id: string
-  type: string
-  quantity: number
-  credits: number
-  date: string
-  status: "pending" | "approved" | "rejected"
-}
+// interface TradeInItem {
+//   id: string
+//   type: string
+//   quantity: number
+//   credits: number
+//   date: string
+//   status: "pending" | "approved" | "rejected"
+// }
 
 interface UserDashboardProps {
   user: User
   onLogout: () => void
   onTradeIn: () => void
   onViewAccount: () => void
-  onUserUpdate: (user: User) => void // Add this new prop
+  onUserUpdate: (user: DatabaseUser) => void 
 }
 
-export function UserDashboard({ user, onLogout, onTradeIn, onViewAccount, onUserUpdate }: UserDashboardProps) {
-  const [recentTrades] = useState<TradeInItem[]>([
-    {
-      id: "1",
-      type: "Plastic Bottles",
-      quantity: 25,
-      credits: 12.5,
-      date: "2024-01-20",
-      status: "approved",
-    },
-    {
-      id: "2",
-      type: "Aluminum Cans",
-      quantity: 15,
-      credits: 18.0,
-      date: "2024-01-18",
-      status: "approved",
-    },
-    {
-      id: "3",
-      type: "Paper/Cardboard",
-      quantity: 10,
-      credits: 8.5,
-      date: "2024-01-15",
-      status: "pending",
-    },
-  ])
+export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: UserDashboardProps) {
+  const [recentTrades] = useState<Post[]>([]);
+
 
   // Add new state variables
   const [showRecyclingModal, setShowRecyclingModal] = useState(false)
   const [showMarketplace, setShowMarketplace] = useState(false)
   const [userSubmissions, setUserSubmissions] = useState<RecyclingSubmission[]>([])
 
-  // Add useEffect to load user submissions
-  useEffect(() => {
-    const submissions = getRecyclingSubmissionsByUser(user.id)
-    setUserSubmissions(submissions)
-  }, [user.id])
+  // Removed unused handleUserUpdate function
+
+  const getRecyclingSubmissionsByUser = async (id: string, isActive: boolean) => {
+      const response = await fetch(`/api/posts/${id}`, {
+        method: 'GET',
+        headers: { "content-type": "application/json" },
+      })
+      const data = await response.json()
+      return data
+    }
+    // setUserSubmissions(submissions) // Removed: 'submissions' is not defined here
 
   // Add new handler functions
   const handleRecyclingSubmission = () => {
@@ -82,8 +62,9 @@ export function UserDashboard({ user, onLogout, onTradeIn, onViewAccount, onUser
 
   const handleSubmissionSuccess = () => {
     // Reload submissions after successful submission
-    const submissions = getRecyclingSubmissionsByUser(user.id)
-    setUserSubmissions(submissions)
+    getRecyclingSubmissionsByUser(user.id, user.isActive).then((submissions) => {
+      setUserSubmissions(submissions)
+    })
   }
 
   const handleViewMarketplace = () => {
@@ -93,6 +74,17 @@ export function UserDashboard({ user, onLogout, onTradeIn, onViewAccount, onUser
   const handleBackFromMarketplace = () => {
     setShowMarketplace(false)
   }
+
+  useEffect(() => {
+      fetch(`/api/users/${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (typeof data.credits === "number") {
+            // onUserUpdate(data);
+          }
+        });
+    }, []);
+
 
   // If showing marketplace, render it instead of dashboard
   if (showMarketplace) {
@@ -118,8 +110,8 @@ export function UserDashboard({ user, onLogout, onTradeIn, onViewAccount, onUser
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user.name}!</h1>
-            <p className="text-gray-600">Member since {user.memberSince}</p>
+            <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user.email}!</h1>
+            <p className="text-gray-600">Member since {user.createdAt}</p>
           </div>
           <div className="flex gap-3">
             <Button onClick={onViewAccount} variant="outline">
@@ -136,7 +128,7 @@ export function UserDashboard({ user, onLogout, onTradeIn, onViewAccount, onUser
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Credit Balance</CardDescription>
-              <CardTitle className="text-3xl text-green-600">${user.creditBalance.toFixed(2)}</CardTitle>
+              <CardTitle className="text-3xl text-green-600">${user.credits}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600">Available for redemption</p>
@@ -165,7 +157,7 @@ export function UserDashboard({ user, onLogout, onTradeIn, onViewAccount, onUser
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4 mb-8">
+        <div className="flex flex-wrap gap-6 mb-8">
           <Button onClick={handleRecyclingSubmission} className="bg-green-500 hover:bg-green-600">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -183,7 +175,7 @@ export function UserDashboard({ user, onLogout, onTradeIn, onViewAccount, onUser
             </svg>
             Browse Marketplace
           </Button>
-          <Button onClick={onTradeIn} variant="outline">
+          {/* <Button onClick={onTradeIn} variant="outline">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -193,7 +185,7 @@ export function UserDashboard({ user, onLogout, onTradeIn, onViewAccount, onUser
               />
             </svg>
             Trade In Items (Legacy)
-          </Button>
+          </Button> */}
           <Button variant="outline">View Rewards</Button>
         </div>
 
@@ -205,17 +197,17 @@ export function UserDashboard({ user, onLogout, onTradeIn, onViewAccount, onUser
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {userSubmissions.slice(0, 5).map((submission) => (
+              {Array.isArray(userSubmissions) && userSubmissions.slice(0, 5).map((submission) => (
                 <div key={submission.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
                     <h4 className="font-semibold">{submission.itemType}</h4>
                     <p className="text-sm text-gray-600">Quantity: {submission.quantity} items</p>
-                    <p className="text-sm text-gray-500">{submission.submittedDate}</p>
-                    {submission.location && <p className="text-xs text-gray-500">{submission.location}</p>}
+                    <p className="text-sm text-gray-500">{submission.submissionDate}</p>
+                    <p className="text-xs text-gray-500">{submission.location}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-green-600">
-                      ${(submission.actualCredits || submission.estimatedCredits).toFixed(2)}
+                      ${(submission.actualCredits ?? submission.estimatedCredits)?.toFixed(2) ?? "0.00"}
                     </p>
                     <Badge className={getStatusColor(submission.status)}>{submission.status}</Badge>
                     {submission.status === "approved" && submission.reviewNotes && (
@@ -257,4 +249,7 @@ export function UserDashboard({ user, onLogout, onTradeIn, onViewAccount, onUser
       </div>
     </div>
   )
+}
+function setUser(arg0: (prevUser: any) => any) {
+  throw new Error("Function not implemented.")
 }

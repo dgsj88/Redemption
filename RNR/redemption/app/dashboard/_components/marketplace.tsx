@@ -139,7 +139,7 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
             <p className="text-gray-600">Use your credits to purchase eco-friendly items</p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-green-600">${user.creditBalance.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-green-600">${user.credits.toFixed(2)}</div>
             <div className="text-sm text-gray-600">Available Credits</div>
             <Button onClick={() => setShowTransactions(!showTransactions)} variant="outline" size="sm" className="mt-2">
               {showTransactions ? "Hide" : "View"} Transactions

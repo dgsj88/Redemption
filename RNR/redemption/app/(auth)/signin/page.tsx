@@ -92,7 +92,17 @@ export default function SignIn() {
               </FormItem>
             )}
           />
-          <Button type="submit">Sign In</Button>
+          <div className="flex justify-between items-center">
+            <Button type="submit">Sign In</Button>
+              <a href="/reset-password" className="text-blue-600 hover:text-pink-500 ml-4">
+                forgot password?
+              </a>
+          </div>
+          <div className="flex justify-end">
+            <a href="/." className="text-blue-600 hover:text-pink-500">
+              ... back to Home
+            </a>
+          </div>
         </form>
       </Form>
     </Card>

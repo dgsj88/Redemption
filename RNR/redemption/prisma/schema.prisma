@@ -46,6 +46,7 @@ model User {
   Post                Post[]
   TransactionsAsBuyer Transaction[] @relation("Buyer")
   TransactionAsSeller Transaction[] @relation("Seller")
+  resetToken          String?
 }
 
 model Post {
@@ -54,20 +55,25 @@ model Post {
   updatedAt   DateTime     @updatedAt
   type        ItemType     @default(Plastic_Bottles)
   desc        String?
-  credits     Int          @default(0)
+  itemCredits Int          @default(0)
   isApproved  Boolean      @default(false)
   authorId    String       @unique
   Author      User         @relation(fields: [authorId], references: [id])
   Transaction Transaction? @relation("post")
+  isAvailable Boolean      @default(true)
+  quantity    Int          @default(0) 
+  Picture     String       @default("https://example.com/default-image.png")
 }
 
 model Transaction {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  buyerId   String
-  sellerId  String
-  Buyer     User     @relation("Buyer", fields: [buyerId], references: [id])
-  Seller    User     @relation("Seller", fields: [sellerId], references: [id])
-  postId    String   @unique
-  Post      Post     @relation("post", fields: [postId], references: [id])
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  buyerId         String
+  sellerId        String
+  Buyer           User     @relation("Buyer", fields: [buyerId], references: [id])
+  Seller          User     @relation("Seller", fields: [sellerId], references: [id])
+  postId          String   @unique
+  Post            Post     @relation("post", fields: [postId], references: [id])
+  agreedCredits   Int      @default(0)
+  isCompleted     Boolean  @default(false)
 }
