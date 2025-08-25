@@ -44,6 +44,7 @@ export default async function DashboardPage() {
             user={user as User}
             name={user?.name || ""}
             userId={user?.id || ""}
+              
           />
         )}
     </>

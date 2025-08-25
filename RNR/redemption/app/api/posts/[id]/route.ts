@@ -13,12 +13,17 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
     if (!session || !session.user) {
       return Response.json({ error: "Unauthenticated" }, { status: 401 });
     }
+    const count = await prisma.post.count({
+      where: {
+        authorId: parsedId,
+      },
+    });
     const target = await prisma.post.findUnique({
       where: {
         id: parsedId,
       },
       include: {
-        author: {
+        authorId: {
           select: {
             email: true,
             name: true,
@@ -28,7 +33,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
     });
     if (!target)
       return Response.json({ error: "Post not found" }, { status: 404 });
-    return Response.json(target, { status: 200 });
+    return Response.json({ count }, { status: 200 });
   } catch (error) {
     if (error instanceof ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });
@@ -40,6 +45,8 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
     return Response.json({ error }, { status: 500 });
   }
 }
+
+
 
 export async function PUT(
   req: Request,

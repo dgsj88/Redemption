@@ -54,6 +54,7 @@ export async function GET(
         role: true,
         credits: true,
         isActive: true,
+        createdAt: true,
       },
     });
     return Response.json(targetUser, { status: 200 });

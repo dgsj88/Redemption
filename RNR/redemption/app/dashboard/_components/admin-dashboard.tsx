@@ -10,11 +10,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AdminSubmissions } from "@/app/dashboard/_components/admin-submissions";
+// import { AdminSubmissions } from "@/app/dashboard/_components/admin-submissions";
 // import { SMTPConfigPage } from "@/app/dashboard/_components/smtp-config-page"
-import { postTypes } from "@/lib/zod";
-import z, { boolean } from "zod";
-import { RecyclingSubmissionModal } from "@/app/dashboard/_components/recycling-submission-modal";
+// import { postTypes } from "@/lib/zod";
+// import z, { boolean } from "zod";
+// import { RecyclingSubmissionModal } from "@/app/dashboard/_components/recycling-submission-modal";
 import {DatabaseUser} from "@/lib/user-database";
 import { Submission } from "@/lib/user-database";
 import { Post } from "@/lib/user-database";
@@ -60,15 +60,15 @@ function updateUser(
   userId: string,
   updates: Partial<DatabaseUser>
 ) {
-  // Find the user and update properties (mock logic)
+ 
   const user = users.find((u) => u.id === userId);
   if (!user) return null;
   return { ...user, ...updates };
 }
 
-interface AdminDashboardProps {
-  onLogout: () => void;
-}
+// interface AdminDashboardProps {
+//   onLogout: () => void;
+// }
 
 export function AdminDashboard() {
   const [currentView, setCurrentView] = useState<
@@ -158,7 +158,7 @@ function AdminSubmissions(props: AdminSubmissionsProps) {
         .catch((err) => console.error("Failed to fetch marketplace items:", err));
     }
   }, [currentView]);
-
+ 
   // Load data
   // setUsers(getAllUsers())
   // setSubmissions(getAllSubmissions())
@@ -583,6 +583,14 @@ function AdminSubmissions(props: AdminSubmissionsProps) {
               <CardDescription>
                 Manage user accounts, roles, and permissions
               </CardDescription>
+              <div className="flex justify-start mt-4">
+                <Button
+                  onClick={() => window.location.href = "/dashboard/create-newuser"}
+                  className="bg-green-600 text-white"
+                >
+                  + New User
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

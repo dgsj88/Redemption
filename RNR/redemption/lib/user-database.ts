@@ -1,6 +1,7 @@
 export interface DatabaseUser {
   id: string;
   email: string;
+  password: string;
   name: string;
   credits: number;
   isActive: boolean;
@@ -14,7 +15,7 @@ export interface DatabaseUser {
 export interface Post{
   id: string;
   desc: string;
-  author: string;
+  authorId: string;
   createdAt: string;
   updatedAt: string;
   type: string;
@@ -43,10 +44,10 @@ export interface RecyclingSubmission {
   imageUrl: string
   status: "pending" | "approved" | "rejected"
   creditsAwarded?: number
-  reviewNotes?: string
+  // reviewNotes: string
   submissionDate: string
-  reviewDate?: string
-  reviewedBy?: string
+  reviewDate: string
+  reviewedBy: string
   quantity: number
   location: string
   actualCredits: number
@@ -62,7 +63,7 @@ export interface MarketplaceItem {
   category: string
   isAvailable: boolean
   stock: number
-  createdDate: string
+  createdAt: string
   addedBy: string
 }
 
@@ -87,6 +88,18 @@ export interface Purchase {
   purchaseDate: string
   deliveryAddress?: string
   trackingNumber?: string
+}
+
+export interface RecyclingSubmission {
+  id: string
+  itemType: string
+  quantity: number
+  estimatedCredits: number
+  actualCredits: number
+  submissionDate: string
+  location: string
+  status: "pending" | "approved" | "rejected"
+  reviewNotes?: string
 }
 
 // In-memory storage (in real app, this would be a database)
@@ -117,7 +130,7 @@ const recyclingSubmissions: RecyclingSubmission[] = [
   //   reviewDate: "2024-01-12",
   //   reviewedBy: "approver_1",
   // },
-]
+ ]
 
 const marketplaceItems: MarketplaceItem[] = [
   // {
@@ -173,15 +186,14 @@ const creditTransactions: CreditTransaction[] = [
 const purchases: Purchase[] = []
 
 // User Management Functions
-export function createUser(userData: Omit<DatabaseUser, "id" | "createdDate">): DatabaseUser {
+export function createUser(userData: Omit<DatabaseUser, "id" | "createdAt">): DatabaseUser {
   const newUser: DatabaseUser = {
     id: `user_${Date.now()}`,
-    // createdAt: new Date().toISOString().split("T")[0],
+    createdAt: new Date().toISOString().split("T")[0],
     ...userData,
   }
   users.push(newUser)
   console.log(`👤 USER CREATED: ${newUser.email} (${newUser.role})`)
-  return { ...newUser }
   return { ...newUser }
 }
 
@@ -225,20 +237,21 @@ export function registerUser(userData: {
       role: "USER",
       credits: 0, // New users start with 0 credits
       isActive: true,
+      // createdAt: new Date().toISOString(),
     })
 
     console.log(`✅ USER REGISTERED: ${newUser.email}`)
     return { success: true, user: newUser }
-  } catch (error) {
+  } catch {
     console.log(`🚫 REGISTRATION FAILED: System error - ${userData.email}`)
     return { success: false, error: "Registration failed due to system error" }
   }
 }
 
 // Current user session management (in real app, this would use proper session management)
-let currentUser: User | null = null
+let currentUser: DatabaseUser | null = null
 
-export function setCurrentUser(user: User | null): void {
+export function setCurrentUser(user: DatabaseUser | null): void {
   currentUser = user
   if (typeof window !== "undefined") {
     if (user) {
@@ -251,7 +264,7 @@ export function setCurrentUser(user: User | null): void {
   }
 }
 
-export function getCurrentUser(): User | null {
+export function getCurrentUser(): DatabaseUser | null {
   if (currentUser) {
     return { ...currentUser }
   }
@@ -275,21 +288,21 @@ export function clearCurrentUser(): void {
   setCurrentUser(null)
 }
 
-export function getUserByEmail(email: string): User | null {
+export function getUserByEmail(email: string): DatabaseUser | null {
   const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase())
   return user ? { ...user } : null
 }
 
-export function getUserById(id: string): User | null {
+export function getUserById(id: string): DatabaseUser | null {
   const user = users.find((u) => u.id === id)
   return user ? { ...user } : null
 }
 
-export function getAllUsers(): User[] {
+export function getAllUsers(): DatabaseUser[] {
   return users.map((user) => ({ ...user }))
 }
 
-export function updateUser(id: string, updates: Partial<User>): User | null {
+export function updateUser(id: string, updates: Partial<DatabaseUser>): DatabaseUser | null {
   const userIndex = users.findIndex((u) => u.id === id)
   if (userIndex === -1) return null
 
@@ -307,7 +320,7 @@ export function deleteUser(id: string): boolean {
   return true
 }
 
-export function validateUserCredentials(email: string, password: string): User | null {
+export function validateUserCredentials(email: string, password: string): DatabaseUser | null {
   const user = getUserByEmail(email)
   if (!user || !user.isActive) return null
 
@@ -321,7 +334,7 @@ export function validateUserCredentials(email: string, password: string): User |
   return null
 }
 
-export function authenticateUser(email: string, password: string): User | null {
+export function authenticateUser(email: string, password: string): DatabaseUser | null {
   const user = getUserByEmail(email)
   if (!user || !user.isActive) return null
 
@@ -337,7 +350,7 @@ export function authenticateUser(email: string, password: string): User | null {
   return null
 }
 
-export function generatePasswordResetToken(email: string): { success: boolean; token?: string; user?: User } {
+export function generatePasswordResetToken(email: string): { success: boolean; token?: string; user?: DatabaseUser } {
   const user = getUserByEmail(email)
   if (!user || !user.isActive) {
     return { success: false }
@@ -352,7 +365,7 @@ export function generatePasswordResetToken(email: string): { success: boolean; t
   return { success: true, token: resetToken, user }
 }
 
-export function validatePasswordResetToken(token: string): User | null {
+export function validatePasswordResetToken(token: string): DatabaseUser | null {
   const user = users.find((u) => u.resetToken === token)
   if (!user || !user.resetTokenExpiry) return null
 
@@ -384,20 +397,20 @@ export function resetPassword(token: string, newPassword: string): boolean {
 
 // Role-based Access Control
 export function isUserAdmin(userId: string): boolean {
-  const user = getUserById(userId)
-  return user?.role === "admin" || false
+  const DatabaseUser = getUserById(userId)
+  return DatabaseUser?.role === "ADMIN" || false
 }
 
 export function isUserApprover(userId: string): boolean {
-  const user = getUserById(userId)
-  return user?.role === "approver" || user?.role === "admin" || false
+  const DatabaseUser = getUserById(userId)
+  return DatabaseUser?.role === "ADMIN" || false
 }
 
-export function getUsersByRole(role: User["role"]): User[] {
+export function getUsersByRole(role: DatabaseUser["role"]): DatabaseUser[] {
   return users.filter((u) => u.role === role).map((user) => ({ ...user }))
 }
 
-export function promoteUser(userId: string, newRole: User["role"]): boolean {
+export function promoteUser(userId: string, newRole: DatabaseUser["role"]): boolean {
   const user = getUserById(userId)
   if (!user) return false
 
@@ -507,6 +520,12 @@ export function submitRecyclingItem(submissionData: {
     imageUrl: `/placeholder.svg?height=200&width=300&text=${encodeURIComponent(submissionData.itemType)}`,
     status: "pending",
     submissionDate: new Date().toISOString().split("T")[0],
+    quantity: submissionData.quantity,
+    location: submissionData.location,
+    actualCredits: 0,
+    estimatedCredits: submissionData.estimatedCredits,
+    reviewDate: "",
+    reviewedBy: "",
   }
 
   recyclingSubmissions.push(newSubmission)
@@ -612,10 +631,10 @@ export function deleteRecyclingSubmission(id: string): boolean {
 }
 
 // Marketplace Functions
-export function createMarketplaceItem(itemData: Omit<MarketplaceItem, "id" | "createdDate">): MarketplaceItem {
+export function createMarketplaceItem(itemData: Omit<MarketplaceItem, "id" | "createdAt">): MarketplaceItem {
   const newItem: MarketplaceItem = {
     id: `item_${Date.now()}`,
-    createdDate: new Date().toISOString().split("T")[0],
+    createdAt: new Date().toISOString().split("T")[0],
     ...itemData,
   }
 
@@ -674,10 +693,13 @@ export function purchaseMarketplaceItem(itemId: string, userId: string): boolean
   }
 
   // Create purchase
+  const selectedItem = getMarketplaceItemById(itemId)
+  const totalCredits = selectedItem ? selectedItem.price * 1 : 0
   const purchase = createPurchase({
     userId: userId,
     itemId: itemId,
     quantity: 1,
+    totalCredits: totalCredits,
     deliveryAddress: "Pickup at collection center",
   })
 
@@ -692,15 +714,16 @@ export function createPurchase(purchaseData: Omit<Purchase, "id" | "purchaseDate
   if (!user || !item) return null
   if (!item.isAvailable || item.stock < purchaseData.quantity) return null
 
-  const totalCredits = item.price * purchaseData.quantity
-  if (user.credits < totalCredits) return null
+  const calculatedTotalCredits = item.price * purchaseData.quantity
+  if (user.credits < calculatedTotalCredits) return null
 
+  const { totalCredits, ...purchaseDataWithoutTotalCredits } = purchaseData
   const newPurchase: Purchase = {
     id: `purchase_${Date.now()}`,
     status: "pending",
     purchaseDate: new Date().toISOString(),
-    totalCredits,
-    ...purchaseData,
+    totalCredits: calculatedTotalCredits,
+    ...purchaseDataWithoutTotalCredits,
   }
 
   purchases.push(newPurchase)
@@ -830,9 +853,9 @@ export function getSystemStats() {
     users: {
       total: getUserCount(),
       active: getActiveUserCount(),
-      admins: getUsersByRole("admin").length,
-      approvers: getUsersByRole("approver").length,
-      regularUsers: getUsersByRole("user").length,
+      admins: getUsersByRole("ADMIN").length,
+      // approvers: getUsersByRole("approver").length,
+      regularUsers: getUsersByRole("USER").length,
     },
     submissions: {
       total: getTotalSubmissions(),
@@ -861,7 +884,7 @@ export function getSystemStats() {
 }
 
 // Utility Functions
-export function searchUsers(query: string): User[] {
+export function searchUsers(query: string): DatabaseUser[] {
   const lowercaseQuery = query.toLowerCase()
   return users
     .filter(
@@ -942,14 +965,14 @@ export function getRecentActivity(limit = 10) {
 
   // Add recent user registrations
   users
-    .sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime())
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 3)
     .forEach((user) => {
       activities.push({
         id: user.id,
         type: "user_registration",
         description: `${user.name} joined the platform`,
-        date: user.createdDate,
+        date: user.createdAt,
         userId: user.id,
         userName: user.name,
       })

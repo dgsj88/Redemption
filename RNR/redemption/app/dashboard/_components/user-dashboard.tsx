@@ -1,51 +1,58 @@
 "use client"
-
+import { signOut } from "next-auth/react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { RecyclingSubmissionModal } from "@/components/recycling-submission-modal"
 import { Marketplace } from "@/components/marketplace"
-import { getRecyclingSubmissionsByUser, type RecyclingSubmission } from "@/lib/user-database"
-import { DatabaseUser } from "@/lib/user-database"
-import { Post } from "@/lib/user-database"
+// import { getRecyclingSubmissionsByUser, type RecyclingSubmission } from "@/lib/user-database"
+import { DatabaseUser, RecyclingSubmission } from "@/lib/user-database"
+//import { User } from "lucide-react"
+// import { Post } from "@/lib/user-database"
 
 
 interface User extends DatabaseUser {
   totalItemsTraded: number
-  createdAt: string
-  isActive: boolean
+  createdAt: string;
+  credits: number;
 }
-
-// interface TradeInItem {
-//   id: string
-//   type: string
-//   quantity: number
-//   credits: number
-//   date: string
-//   status: "pending" | "approved" | "rejected"
-// }
 
 interface UserDashboardProps {
   user: User
-  onLogout: () => void
+
+  // onLogout: (signOut: () => void) => void
+
   onTradeIn: () => void
   onViewAccount: () => void
-  onUserUpdate: (user: DatabaseUser) => void 
+  onUpdate: (user: DatabaseUser) => void
 }
 
-export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: UserDashboardProps) {
-  const [recentTrades] = useState<Post[]>([]);
+export function UserDashboard({ user, onViewAccount, onUpdate }: UserDashboardProps) {
 
+  useEffect(() => {
+      fetch(`/api/users/${user.id}`)
+        .then(res => res.json())
+        .then(data => {setUserData(data) });
+    }, [user, user.id]);
+
+    console.log("user in dashboard:", user);
+
+  useEffect(() => {
+    fetch("/api/posts/count")
+      .then(res => res.json())
+      .then(data => setPostCount(data.count ?? 0))
+      .catch(() => setPostCount(0));
+  }, [user.id]);
 
   // Add new state variables
   const [showRecyclingModal, setShowRecyclingModal] = useState(false)
   const [showMarketplace, setShowMarketplace] = useState(false)
   const [userSubmissions, setUserSubmissions] = useState<RecyclingSubmission[]>([])
+  const [userData, setUserData] = useState(null);
+  const [postCount, setPostCount] = useState<number>(0);
 
-  // Removed unused handleUserUpdate function
-
-  const getRecyclingSubmissionsByUser = async (id: string, isActive: boolean) => {
+  const getRecyclingSubmissionsByUser = async (id: string) => {
       const response = await fetch(`/api/posts/${id}`, {
         method: 'GET',
         headers: { "content-type": "application/json" },
@@ -53,7 +60,6 @@ export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: U
       const data = await response.json()
       return data
     }
-    // setUserSubmissions(submissions) // Removed: 'submissions' is not defined here
 
   // Add new handler functions
   const handleRecyclingSubmission = () => {
@@ -62,7 +68,7 @@ export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: U
 
   const handleSubmissionSuccess = () => {
     // Reload submissions after successful submission
-    getRecyclingSubmissionsByUser(user.id, user.isActive).then((submissions) => {
+    getRecyclingSubmissionsByUser(user.id).then((submissions) => {
       setUserSubmissions(submissions)
     })
   }
@@ -75,20 +81,10 @@ export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: U
     setShowMarketplace(false)
   }
 
-  useEffect(() => {
-      fetch(`/api/users/${user.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (typeof data.credits === "number") {
-            // onUserUpdate(data);
-          }
-        });
-    }, []);
-
 
   // If showing marketplace, render it instead of dashboard
   if (showMarketplace) {
-    return <Marketplace user={user} onBack={handleBackFromMarketplace} onUserUpdate={onUserUpdate} />
+    return <Marketplace user={user} onBack={handleBackFromMarketplace} onUserUpdate={onUpdate} />
   }
 
   const getStatusColor = (status: string) => {
@@ -111,13 +107,19 @@ export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: U
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user.email}!</h1>
-            <p className="text-gray-600">Member since {user.createdAt}</p>
+              <p className="text-gray-600">Member since {userData?.createdAt || "Not Specified"}</p>
+             {/* <p className="text-gray-600">Member since {(userData?.createdAt).toLocaleDateString("en-GB",{
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}</p> */}
+
           </div>
           <div className="flex gap-3">
             <Button onClick={onViewAccount} variant="outline">
               Account Settings
             </Button>
-            <Button onClick={onLogout} variant="outline">
+            <Button onClick={() => signOut()} variant="outline">
               Logout
             </Button>
           </div>
@@ -128,7 +130,7 @@ export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: U
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Credit Balance</CardDescription>
-              <CardTitle className="text-3xl text-green-600">${user.credits}</CardTitle>
+              <CardTitle className="text-3xl text-green-600">${userData?.credits || 0}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600">Available for redemption</p>
@@ -138,7 +140,7 @@ export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: U
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Items Traded</CardDescription>
-              <CardTitle className="text-3xl text-blue-600">{user.totalItemsTraded}</CardTitle>
+              <CardTitle className="text-3xl text-blue-600">{postCount}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600">Total recycled items</p>
@@ -186,7 +188,7 @@ export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: U
             </svg>
             Trade In Items (Legacy)
           </Button> */}
-          <Button variant="outline">View Rewards</Button>
+          {/* <Button variant="outline">View Rewards</Button> */}
         </div>
 
         {/* Recent Submissions */}
@@ -232,7 +234,7 @@ export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: U
                     />
                   </svg>
                   <p>No recycling submissions yet</p>
-                  <p className="text-sm">Click "Submit Recycling Items" to get started!</p>
+                  <p className="text-sm">Click &quot;Submit Recycling Items&quot; to get started!</p>
                 </div>
               )}
             </div>
@@ -250,6 +252,4 @@ export function UserDashboard({ user, onLogout, onViewAccount, onUserUpdate }: U
     </div>
   )
 }
-function setUser(arg0: (prevUser: any) => any) {
-  throw new Error("Function not implemented.")
-}
+
