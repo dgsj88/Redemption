@@ -658,6 +658,25 @@ function AdminSubmissions(props: AdminSubmissionsProps) {
                       >
                         {user.role}
                       </Badge>
+                      <Button
+                        variant="destructive"
+                        className="ml-2"
+                        onClick={async () => {
+                          const res = await fetch(`/api/users/[id]/${user.id}`, {
+                          // const res = await fetch(`/api/users/${user.id}`, {
+                            method: "DELETE",
+                            // headers: { "Content-Type": "application/json" },
+                            // body: JSON.stringify({ id: user.id }),
+                          });
+                          if (res.ok) {
+                            setUsers((prev) => prev.filter((u) => u.id !== user.id));
+                          } else {
+                            alert("Failed to delete user.");
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
                     </div>
                   </div>
                 ))}
