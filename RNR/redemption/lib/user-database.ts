@@ -20,9 +20,24 @@ export interface Post{
   updatedAt: string;
   type: string;
   isApproved: boolean;
-  credits: number;
+  itemCredits: number;
   isAvailable: boolean;
   quantity: number;
+  imagePath: string;
+  location: string;
+  amount?: number;
+}
+
+export interface Transaction {
+  id: string;
+  createdAt: string;
+  postId: string;
+  buyerId: string;
+  sellerId: string;
+  agreedCredits: number;
+  isCompleted: boolean;
+  buyerAgreed: boolean;
+  sellerAgreed: boolean;
 }
 
 export interface Submission {
@@ -52,6 +67,7 @@ export interface RecyclingSubmission {
   location: string
   actualCredits: number
   estimatedCredits: number
+  imagePath: string
 }
 
 export interface MarketplaceItem {
@@ -511,6 +527,7 @@ export function submitRecyclingItem(submissionData: {
   description: string
   estimatedCredits: number
   location: string
+  imagePath: string
 }): RecyclingSubmission {
   const newSubmission: RecyclingSubmission = {
     id: `sub_${Date.now()}`,

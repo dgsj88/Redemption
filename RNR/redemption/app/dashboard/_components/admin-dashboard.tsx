@@ -662,17 +662,27 @@ function AdminSubmissions(props: AdminSubmissionsProps) {
                         variant="destructive"
                         className="ml-2"
                         onClick={async () => {
-                          const res = await fetch(`/api/users/[id]/${user.id}`, {
+                          const res = await fetch(`/api/users`, {
                           // const res = await fetch(`/api/users/${user.id}`, {
                             method: "DELETE",
-                            // headers: { "Content-Type": "application/json" },
-                            // body: JSON.stringify({ id: user.id }),
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ id: user.id }),
                           });
                           if (res.ok) {
                             setUsers((prev) => prev.filter((u) => u.id !== user.id));
                           } else {
-                            alert("Failed to delete user.");
-                          }
+                            const data = await res.json();
+                            if (
+                              data.error &&
+                              data.error.toLowerCase().includes("foreign key constraint")
+                            ) {
+                              alert(
+                                "Cannot delete user: This user has related records (e.g., posts, submissions) in the system."
+                              );
+                            } else {
+                              alert("Failed to delete user. This record has transactions linked to it.");
+                            }
+                          } 
                         }}
                       >
                         Delete

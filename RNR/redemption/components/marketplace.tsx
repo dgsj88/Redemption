@@ -8,14 +8,19 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Notification } from "@/components/notification"
 import {
-  getAllMarketplaceItems,
+  //getAllMarketplaceItems,
   purchaseMarketplaceItem,
   getCreditTransactionsByUser,
-  type MarketplaceItem,
-  type DatabaseUser,
+  //getAllPosts,
+  //type MarketplaceItem,
+  DatabaseUser,
   type CreditTransaction,
+  Post,
+  //type Transaction,
 } from "@/lib/user-database"
 import Image from "next/image"
+//import { POST } from "@/app/api/posts/route"
+//import { tr } from "zod/v4/locales"
 
 interface MarketplaceProps {
   user: DatabaseUser
@@ -30,14 +35,22 @@ interface NotificationState {
 }
 
 export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
-  const [items, setItems] = useState<MarketplaceItem[]>([])
-  const [selectedItem, setSelectedItem] = useState<MarketplaceItem | null>(null)
+  const [items, setItems] = useState<Post[]>([])
+  const [selectedItem, setSelectedItem] = useState<Post | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [priceFilter, setPriceFilter] = useState("all")
   const [notifications, setNotifications] = useState<NotificationState[]>([])
-  const [transactions, setTransactions] = useState<CreditTransaction[]>([])
+  //const [transactions, setTransactions] = useState<Transaction[]>([])
   const [showTransactions, setShowTransactions] = useState(false)
+  const [creditTransactions, setCreditTransactions] = useState<CreditTransaction[]>([])
+  const [userData, setUserData] = useState(null);
+
+    useEffect(() => {
+      fetch(`/api/users/${user.id}`)
+        .then(res => res.json())
+        .then(data => {setUserData(data) });
+    }, [user, user.id]);
 
   useEffect(() => {
     loadItems()
@@ -45,13 +58,13 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
   }, [])
 
   const loadItems = () => {
-    const allItems = getAllMarketplaceItems()
+    const allItems = getAllPosts()
     setItems(allItems)
   }
 
   const loadTransactions = () => {
-    const userTransactions = getCreditTransactionsByUser(user.id)
-    setTransactions(userTransactions)
+    const transactions = getCreditTransactionsByUser(user.id)
+    setCreditTransactions(transactions)
   }
 
   const addNotification = (message: string, type: "success" | "error" | "info" = "success") => {
@@ -68,10 +81,10 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
 
     if (success) {
       const item = items.find((i) => i.id === itemId)
-      addNotification(`Successfully purchased ${item?.title}!`, "success")
+      addNotification(`Successfully purchased ${item?.id}!`, "success")
 
       // Update user data and reload items
-      const updatedUser = { ...user, creditBalance: user.creditBalance - (item?.creditPrice || 0) }
+      const updatedUser = { ...user, credits: user.credits - (item?.itemCredits || 0) }
       onUserUpdate(updatedUser)
       loadItems()
       loadTransactions()
@@ -83,37 +96,38 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
 
   const filteredItems = items.filter((item) => {
     const matchesSearch =
-      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.desc.toLowerCase().includes(searchTerm.toLowerCase())
+      // Uncomment the next line if you want to include tags in the search
+      //|| item.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
 
-    const matchesCategory = categoryFilter === "all" || item.category === categoryFilter
+    const matchesCategory = categoryFilter === "all" || item.type === categoryFilter
 
     const matchesPrice =
       priceFilter === "all" ||
-      (priceFilter === "low" && item.creditPrice <= 20) ||
-      (priceFilter === "medium" && item.creditPrice > 20 && item.creditPrice <= 50) ||
-      (priceFilter === "high" && item.creditPrice > 50)
+      (priceFilter === "low" && item.itemCredits <= 20) ||
+      (priceFilter === "medium" && item.itemCredits > 20 && item.itemCredits <= 50) ||
+      (priceFilter === "high" && item.itemCredits > 50)
 
     return matchesSearch && matchesCategory && matchesPrice
   })
 
-  const getConditionColor = (condition: string) => {
-    switch (condition) {
-      case "excellent":
-        return "bg-green-100 text-green-800"
-      case "good":
-        return "bg-blue-100 text-blue-800"
-      case "fair":
-        return "bg-yellow-100 text-yellow-800"
-      case "poor":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
+  // const getConditionColor = (condition: string) => {
+  //   switch (condition) {
+  //     case "excellent":
+  //       return "bg-green-100 text-green-800"
+  //     case "good":
+  //       return "bg-blue-100 text-blue-800"
+  //     case "fair":
+  //       return "bg-yellow-100 text-yellow-800"
+  //     case "poor":
+  //       return "bg-red-100 text-red-800"
+  //     default:
+  //       return "bg-gray-100 text-gray-800"
+  //   }
+  // }
 
-  const categories = [...new Set(items.map((item) => item.category))]
+  const types = [...new Set(items.map((item) => item.type))]
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -139,7 +153,7 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
             <p className="text-gray-600">Use your credits to purchase eco-friendly items</p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-green-600">${user.creditBalance.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-green-600">${userData?.credits}</div>
             <div className="text-sm text-gray-600">Available Credits</div>
             <Button onClick={() => setShowTransactions(!showTransactions)} variant="outline" size="sm" className="mt-2">
               {showTransactions ? "Hide" : "View"} Transactions
@@ -156,18 +170,18 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {transactions.map((transaction) => (
+                {creditTransactions.map((transaction) => (
                   <div key={transaction.id} className="flex justify-between items-center p-3 border rounded-lg">
                     <div>
                       <p className="font-medium">{transaction.description}</p>
                       <p className="text-sm text-gray-600">{transaction.date}</p>
                     </div>
-                    <div className={`font-bold ${transaction.amount > 0 ? "text-green-600" : "text-red-600"}`}>
-                      {transaction.amount > 0 ? "+" : ""}${Math.abs(transaction.amount).toFixed(2)}
+                    <div className={`font-bold ${(transaction.amount ?? 0) > 0 ? "text-green-600" : "text-red-600"}`}>
+                      {(transaction.amount ?? 0) > 0 ? "+" : ""}${Math.abs(transaction.amount ?? 0).toFixed(2)}
                     </div>
                   </div>
                 ))}
-                {transactions.length === 0 && <p className="text-center text-gray-500 py-4">No transactions yet</p>}
+                {creditTransactions.length === 0 && <p className="text-center text-gray-500 py-4">No transactions yet</p>}
               </div>
             </CardContent>
           </Card>
@@ -198,9 +212,9 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {types.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -226,9 +240,9 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
                   <h4 className="font-medium mb-2">Quick Stats</h4>
                   <div className="text-sm text-gray-600 space-y-1">
                     <div>Available Items: {items.length}</div>
-                    <div>Your Credits: ${user.creditBalance.toFixed(2)}</div>
+                    <div>Your Credits: ${user.credits}</div>
                     <div>
-                      Items You Can Afford: {items.filter((item) => item.creditPrice <= user.creditBalance).length}
+                      Items You Can Afford: {items.filter((item) => item.itemCredits <= user.credits).length}
                     </div>
                   </div>
                 </div>
@@ -249,29 +263,29 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
                 >
                   <div className="aspect-square relative">
                     <Image
-                      src={item.images[0] || "/placeholder.svg"}
-                      alt={item.title}
+                      src={item.imagePath[0] || "/placeholder.svg"}
+                      alt={item.id}
                       fill
                       className="object-cover rounded-t-lg"
                     />
-                    <div className="absolute top-2 right-2">
+                    {/* <div className="absolute top-2 right-2">
                       <Badge className={getConditionColor(item.condition)}>{item.condition}</Badge>
-                    </div>
+                    </div> */}
                   </div>
                   <CardContent className="p-4">
-                    <h3 className="font-semibold mb-2 line-clamp-2">{item.title}</h3>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
+                    <h3 className="font-semibold mb-2 line-clamp-2">{item.id}</h3>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.desc}</p>
                     <div className="flex justify-between items-center">
-                      <div className="text-lg font-bold text-green-600">${item.creditPrice} credits</div>
-                      <Badge variant="outline">{item.category}</Badge>
+                      <div className="text-lg font-bold text-green-600">${item.itemCredits} credits</div>
+                      <Badge variant="outline">{item.type}</Badge>
                     </div>
-                    <div className="flex flex-wrap gap-1 mt-2">
+                    {/* <div className="flex flex-wrap gap-1 mt-2">
                       {item.tags.slice(0, 3).map((tag) => (
                         <Badge key={tag} variant="secondary" className="text-xs">
                           {tag}
                         </Badge>
                       ))}
-                    </div>
+                    </div> */}
                   </CardContent>
                 </Card>
               ))}
@@ -302,14 +316,14 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
             {selectedItem ? (
               <Card className="sticky top-8">
                 <CardHeader>
-                  <CardTitle className="line-clamp-2">{selectedItem.title}</CardTitle>
-                  <CardDescription>{selectedItem.category}</CardDescription>
+                  <CardTitle className="line-clamp-2">{selectedItem.id}</CardTitle>
+                  <CardDescription>{selectedItem.type}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="aspect-square relative">
                     <Image
-                      src={selectedItem.images[0] || "/placeholder.svg"}
-                      alt={selectedItem.title}
+                      src={selectedItem.imagePath[0] || "/placeholder.svg"}
+                      alt={selectedItem.id}
                       fill
                       className="object-cover rounded-lg"
                     />
@@ -317,28 +331,28 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
 
                   <div>
                     <h4 className="font-semibold mb-2">Description</h4>
-                    <p className="text-sm text-gray-600">{selectedItem.description}</p>
+                    <p className="text-sm text-gray-600">{selectedItem.desc}</p>
                   </div>
 
                   <div>
                     <h4 className="font-semibold mb-2">Details</h4>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
+                      {/* <div className="flex justify-between">
                         <span>Condition:</span>
                         <Badge className={getConditionColor(selectedItem.condition)}>{selectedItem.condition}</Badge>
-                      </div>
+                      </div> */}
                       <div className="flex justify-between">
                         <span>Seller:</span>
-                        <span>{selectedItem.sellerName}</span>
+                        <span>{selectedItem.sellerId}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Listed:</span>
-                        <span>{selectedItem.createdDate}</span>
+                        <span>{selectedItem.createdAt}</span>
                       </div>
                     </div>
                   </div>
 
-                  {selectedItem.specifications && Object.keys(selectedItem.specifications).length > 0 && (
+                  {/* {selectedItem.specifications && Object.keys(selectedItem.specifications).length > 0 && (
                     <div>
                       <h4 className="font-semibold mb-2">Specifications</h4>
                       <div className="space-y-1 text-sm">
@@ -350,12 +364,12 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
                         ))}
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   <div className="border-t pt-4">
-                    <div className="text-2xl font-bold text-green-600 mb-4">${selectedItem.creditPrice} credits</div>
+                    <div className="text-2xl font-bold text-green-600 mb-4">${selectedItem.itemCredits} credits</div>
 
-                    {user.creditBalance >= selectedItem.creditPrice ? (
+                    {user.credits >= selectedItem.itemCredits ? (
                       <Button
                         onClick={() => handlePurchase(selectedItem.id)}
                         className="w-full bg-green-500 hover:bg-green-600"
@@ -368,7 +382,7 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
                           Insufficient Credits
                         </Button>
                         <p className="text-sm text-red-600 text-center">
-                          You need ${(selectedItem.creditPrice - user.creditBalance).toFixed(2)} more credits
+                          You need ${(selectedItem.itemCredits - user.credits).toFixed(2)} more credits
                         </p>
                       </div>
                     )}
@@ -409,3 +423,8 @@ export function Marketplace({ user, onBack, onUserUpdate }: MarketplaceProps) {
     </div>
   )
 }
+function getAllPosts(): Post[]{
+  //throw new Error("Function not implemented.")
+return []
+}
+

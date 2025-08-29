@@ -209,3 +209,33 @@ export async function POST(req: Request) {
   }
 }
 
+// Delete User
+export async function DELETE(req: Request) {
+  try {
+    const session = await auth();
+    if (!session || !session.user)
+      return Response.json({ error: "Unauthenticated" }, { status: 401 });
+    if (session.user.role !== "ADMIN")
+      return Response.json({ error: "Unauthorized" }, { status: 403 });
+
+    const { id } = await req.json();
+    if (!id) {
+      return Response.json({ error: "User ID required" }, { status: 400 });
+    }
+
+    await prisma.user.delete({
+      where: { id },
+    });
+
+    return Response.json({ success: true }, { status: 200 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Response.json({ error: error.issues }, { status: 400 });
+    }
+    if (error instanceof PrismaClientKnownRequestError) {
+      const { error: errMsg, status } = prismaErrorHandler(error);
+      return Response.json({ error: errMsg }, { status });
+    }
+    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}

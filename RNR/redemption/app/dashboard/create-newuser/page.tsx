@@ -20,6 +20,10 @@ export default function AddUserPage({ onUserAdded }: { onUserAdded?: () => void 
       setError("All fields are required.");
       return;
     }
+    if (name.trim().length < 5) {
+    setError("Name must be more than 4 characters.");
+    return;
+    }
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -48,7 +52,7 @@ export default function AddUserPage({ onUserAdded }: { onUserAdded?: () => void 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
-            placeholder="Full Name"
+            placeholder="Full Name (Minimum 5 characters)"
             value={name}
             onChange={e => setName(e.target.value)}
             className="w-full border rounded px-3 py-2"
