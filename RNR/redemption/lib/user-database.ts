@@ -25,7 +25,6 @@ export interface Post{
   quantity: number;
   imagePath: string;
   location: string;
-  amount?: number;
 }
 
 export interface Transaction {
@@ -46,20 +45,20 @@ export interface Submission {
   author: string;
   createdAt: string;
   isApproved: boolean;
-  credits: number;
+  itemCredits: number;
   quantity: number;
   location: string;
 }
 
 export interface RecyclingSubmission {
   id: string
-  userId: string
-  itemType: string
-  description: string
+  authorId: string
+  type: string
+  desc: string
   imageUrl: string
   status: "pending" | "approved" | "rejected"
   creditsAwarded?: number
-  // reviewNotes: string
+  reviewNotes?: string
   submissionDate: string
   reviewDate: string
   reviewedBy: string
@@ -68,6 +67,8 @@ export interface RecyclingSubmission {
   actualCredits: number
   estimatedCredits: number
   imagePath: string
+  isApproved: boolean
+  isAvailable: boolean
 }
 
 export interface MarketplaceItem {
@@ -108,7 +109,7 @@ export interface Purchase {
 
 export interface RecyclingSubmission {
   id: string
-  itemType: string
+  type: string
   quantity: number
   estimatedCredits: number
   actualCredits: number
@@ -519,34 +520,79 @@ export function getAllCreditTransactions(): CreditTransaction[] {
 
 // Recycling Submission Functions
 export function submitRecyclingItem(submissionData: {
-  userId: string
-  userName: string
-  userEmail: string
-  itemType: string
+  authorId: string
+  //userName: string
+  //userEmail: string
+  type: string
   quantity: number
-  description: string
-  estimatedCredits: number
+  desc: string
+  itemCredits: number
   location: string
   imagePath: string
+  isAvailable: boolean
+  isApproved: boolean
 }): RecyclingSubmission {
   const newSubmission: RecyclingSubmission = {
     id: `sub_${Date.now()}`,
-    userId: submissionData.userId,
-    itemType: submissionData.itemType,
-    description: submissionData.description,
-    imageUrl: `/placeholder.svg?height=200&width=300&text=${encodeURIComponent(submissionData.itemType)}`,
+    authorId: submissionData.authorId,
+    type: submissionData.type,
+    desc: submissionData.desc,
+    imageUrl: `/placeholder.svg?height=200&width=300&text=${encodeURIComponent(submissionData.type)}`,
+    imagePath: submissionData.imagePath,
     status: "pending",
     submissionDate: new Date().toISOString().split("T")[0],
     quantity: submissionData.quantity,
     location: submissionData.location,
     actualCredits: 0,
-    estimatedCredits: submissionData.estimatedCredits,
+    estimatedCredits: submissionData.itemCredits,
+    reviewNotes: "",
     reviewDate: "",
     reviewedBy: "",
+    isApproved: false,
+    isAvailable: true,
   }
+// Declare variables with placeholder values or get them from your form/context
+// const authorId = "";
+// //const userName = "";
+// //const userEmail = "";
+// const type = "";
+// const quantity = 0;
+// const description = "";
+// const itemCredits = 0;
+// const location = "";
+//const imagePath = "";
+
+// const handleSubmit = async (e: React.FormEvent) => {
+//   e.preventDefault();
+//   setIsSubmitting(true);
+
+//   try {
+//     const res = await fetch("/api/posts", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({
+//         userId,
+//         type,
+//         quantity,
+//         description,
+//         itemCredits,
+//         location,
+//         //imagePath,
+//       }),
+//     });
+//     //if (!res.ok) throw new Error("Failed to submit");
+//     // Optionally handle response
+//     await res.json();
+//     // Reset form or show success message
+//   } catch (error) {
+//     console.error("Submission error:", error);
+//     // Show error message
+//   } finally {
+//     //setIsSubmitting(false);
+//   };
 
   recyclingSubmissions.push(newSubmission)
-  console.log(`♻️ RECYCLING SUBMISSION CREATED: ${newSubmission.itemType} by ${submissionData.userName}`)
+  console.log(`♻️ RECYCLING SUBMISSION CREATED: ${newSubmission.type} by ${submissionData.authorId}`)
   return { ...newSubmission }
 }
 
@@ -557,7 +603,7 @@ export function getRecyclingSubmissionById(id: string): RecyclingSubmission | nu
 
 export function getRecyclingSubmissionsByUser(userId: string): RecyclingSubmission[] {
   return recyclingSubmissions
-    .filter((s) => s.userId === userId)
+    .filter((s) => s.authorId === userId)
     .sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime())
     .map((submission) => ({ ...submission }))
 }
@@ -598,9 +644,9 @@ export function approveRecyclingSubmission(
 
   // Add credits to user
   addCreditsToUser(
-    submission.userId,
+    submission.authorId,
     creditsAwarded,
-    `Credits earned from ${submission.itemType} submission`,
+    `Credits earned from ${submission.type} submission`,
     submissionId,
   )
 
@@ -918,8 +964,8 @@ export function searchSubmissions(query: string): RecyclingSubmission[] {
   return recyclingSubmissions
     .filter(
       (submission) =>
-        submission.itemType.toLowerCase().includes(lowercaseQuery) ||
-        submission.description.toLowerCase().includes(lowercaseQuery) ||
+        submission.type.toLowerCase().includes(lowercaseQuery) ||
+        submission.desc.toLowerCase().includes(lowercaseQuery) ||
         submission.status.toLowerCase().includes(lowercaseQuery),
     )
     .map((submission) => ({ ...submission }))
@@ -952,13 +998,13 @@ export function getRecentActivity(limit = 10) {
     .sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime())
     .slice(0, 5)
     .forEach((submission) => {
-      const user = getUserById(submission.userId)
+      const user = getUserById(submission.authorId)
       activities.push({
         id: submission.id,
         type: "submission",
-        description: `${user?.name || "Unknown User"} submitted ${submission.itemType}`,
+        description: `${user?.name || "Unknown User"} submitted ${submission.type}`,
         date: submission.submissionDate,
-        userId: submission.userId,
+        userId: submission.authorId,
         userName: user?.name,
       })
     })
@@ -1005,3 +1051,15 @@ export const getSubmissions = getAllRecyclingSubmissions
 export const getAllSubmissions = getAllRecyclingSubmissions
 export const getSubmissionsByUser = getRecyclingSubmissionsByUser
 export const getSubmissionById = getRecyclingSubmissionById
+
+
+// function setIsSubmitting(arg0: boolean) {
+//   throw new Error("Function not implemented.");
+// }
+
+// Simple state setter for submission status (for use in React or similar UI context)
+// let isSubmitting = false;
+
+// function setIsSubmitting(value: boolean) {
+//   isSubmitting = value;
+// }

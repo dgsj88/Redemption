@@ -25,7 +25,7 @@ function buildFilterObject(searchParams: URLSearchParams) {
   const isApprovedFilter = searchParams.get("isApproved");
 
   //isAvailable filter
-  const isAvailableFilter = searchParams.get("isAvailable");
+  //const isAvailableFilter = searchParams.get("isAvailable");
 
   //createdAt filters
   const createdAtGteFilter = searchParams.get("createdAtGte");
@@ -41,12 +41,12 @@ function buildFilterObject(searchParams: URLSearchParams) {
   const updatedAtLtFilter = searchParams.get("updatedAtLt");
   const updatedAtEqFilter = searchParams.get("updatedAt");
 
-  //credits filters
+  //itemCfilters
   const creditsGteFilter = searchParams.get("creditsGte");
   const creditsLteFilter = searchParams.get("creditsLte");
   const creditsGtFilter = searchParams.get("creditsGt");
   const creditsLtFilter = searchParams.get("creditsLt");
-  const creditsEqFilter = searchParams.get("credits");
+  const creditsEqFilter = searchParams.get("itemCredits");
 
   const hasIdFilter = idFilter !== null;
   const hasAuthorIdFilter = authorIdFilter !== null;
@@ -98,12 +98,12 @@ function buildFilterObject(searchParams: URLSearchParams) {
       filterObj.updatedAt.equals = new Date(updatedAtEqFilter);
   }
   if (hasCreditsFilter) {
-    filterObj.credits = {};
-    if (creditsGteFilter) filterObj.credits.gte = parseInt(creditsGteFilter);
-    if (creditsLteFilter) filterObj.credits.lte = parseInt(creditsLteFilter);
-    if (creditsGtFilter) filterObj.credits.gt = parseInt(creditsGtFilter);
-    if (creditsLtFilter) filterObj.credits.lt = parseInt(creditsLtFilter);
-    if (creditsEqFilter) filterObj.credits.equals = parseInt(creditsEqFilter);
+    filterObj.itemCredits = {};
+    if (creditsGteFilter) filterObj.itemCredits.gte = parseInt(creditsGteFilter);
+    if (creditsLteFilter) filterObj.itemCredits.lte = parseInt(creditsLteFilter);
+    if (creditsGtFilter) filterObj.itemCredits.gt = parseInt(creditsGtFilter);
+    if (creditsLtFilter) filterObj.itemCredits.lt = parseInt(creditsLtFilter);
+    if (creditsEqFilter) filterObj.itemCredits.equals = parseInt(creditsEqFilter);
   }
 
   return filterObj;
@@ -119,7 +119,7 @@ function buildSortObject(searchParams: URLSearchParams) {
   if (searchParams.get("sortByType"))
     sortObj.type = searchParams.get("sortByType") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByCredits"))
-    sortObj.credits = searchParams.get("sortByCredits") as z.infer<typeof sortTypes>;
+    sortObj.itemCredits= searchParams.get("sortByCredits") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByIsApproved"))
     sortObj.isApproved = searchParams.get("sortByIsApproved") as z.infer<typeof sortTypes>;
   if (searchParams.get("sortByAuthorId"))

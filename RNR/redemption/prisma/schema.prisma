@@ -21,25 +21,25 @@ model User {
   isActive            Boolean       @default(true)
   role                UserRole      @default(USER)
   resetToken          String?
-  Post                Post?
+  Post                Post[]
   TransactionsAsBuyer Transaction[] @relation("Buyer")
   TransactionAsSeller Transaction[] @relation("Seller")
 }
 
 model Post {
-  id          String       @id @default(cuid())
+  id          String       @unique @id @default(cuid())
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   type        ItemType     @default(Plastic_Bottles)
   desc        String       @default("")
   isApproved  Boolean      @default(false)
-  authorId    String       @unique
+  authorId    String       @default("") 
   isAvailable Boolean      @default(true)
   quantity    Int          @default(0)
   imagePath   String       @default("https://example.com/default-image.png")
   itemCredits Int          @default(0)
   location    String       @default("")
-  Author      User         @relation(fields: [authorId], references: [id])
+  Author      User         @relation(fields: [authorId] , references: [id])
   Transaction Transaction? @relation("post")
 }
 

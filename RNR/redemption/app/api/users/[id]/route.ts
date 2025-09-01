@@ -70,3 +70,26 @@ export async function GET(
   }
 }
 
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Response> {
+  try {
+    const userId = userIdSchema.parse((await params).id);
+    await prisma.user.delete({
+      where: {
+        id: userId,
+      },
+    });
+    return new Response(null, { status: 204 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Response.json({ error: error.issues }, { status: 400 });
+    }
+    if (error instanceof PrismaClientKnownRequestError) {
+      const { error: errMsg, status } = prismaErrorHandler(error);
+      return Response.json({ error: errMsg }, { status });
+    }
+    return Response.json({ error }, { status: 500 });
+  }
+}

@@ -108,7 +108,7 @@ function AdminSubmissions(props: AdminSubmissionsProps) {
                   Submitted by {submission.author} • {submission.createdAt}
                 </p>
                 <p className="text-xs text-gray-500">
-                  Credits: ${submission.credits.toFixed(2)}
+                  Credits: ${submission.itemCredits}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -228,7 +228,7 @@ function AdminSubmissions(props: AdminSubmissionsProps) {
     ).length;
     const totalCreditsAwarded = submissions
       .filter((s) => s.isApproved === true)
-      .reduce((sum, s) => sum + s.credits, 0);
+      .reduce((sum, s) => sum + s.itemCredits, 0);
     const marketplaceItemsCount = marketplaceItems.length;
 
     return {
@@ -717,7 +717,7 @@ function AdminSubmissions(props: AdminSubmissionsProps) {
                     </p>
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">
-                        ${item.credits.toFixed(2)}
+                        ${item.itemCredits.toFixed(2)}
                       </span>
                       <Badge variant={item.isAvailable ? "default" : "secondary"}>
                         {item.isAvailable ? "Available" : "Sold Out"}

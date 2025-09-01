@@ -1,33 +1,75 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { submitRecyclingItem, type DatabaseUser } from "@/lib/user-database"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { type Post, type DatabaseUser } from "@/lib/user-database";
+import Image from "next/image";
 
 interface RecyclingSubmissionModalProps {
-  isOpen: boolean
-  onClose: () => void
-  user: DatabaseUser
-  onSubmissionSuccess: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  user: DatabaseUser;
+  post: Post | null;
+  onSubmissionSuccess: () => void;
 }
 
 const recyclingCategories = [
-  { type: "Plastic Bottles", creditPerItem: 0.5, description: "Clean plastic bottles (PET)" },
-  { type: "Aluminum Cans", creditPerItem: 1.2, description: "Aluminum beverage cans" },
-  { type: "Paper/Cardboard", creditPerItem: 0.8, description: "Clean paper and cardboard" },
-  { type: "Glass Bottles", creditPerItem: 0.7, description: "Glass bottles and jars" },
-  { type: "Electronics", creditPerItem: 5.0, description: "Small electronics (phones, tablets)" },
+  {
+    type: "Plastic Bottles",
+    creditPerItem: 0.5,
+    description: "Clean plastic bottles (PET)",
+  },
+  {
+    type: "Aluminum Cans",
+    creditPerItem: 1.2,
+    description: "Aluminum beverage cans",
+  },
+  {
+    type: "Paper",
+    creditPerItem: 0.8,
+    description: "Clean paper and cardboard",
+  },
+  {
+    type: "Glass Bottles",
+    creditPerItem: 0.7,
+    description: "Glass bottles and jars",
+  },
+  {
+    type: "Electronics",
+    creditPerItem: 5.0,
+    description: "Small electronics (phones, tablets)",
+  },
   { type: "Batteries", creditPerItem: 2.0, description: "Household batteries" },
-  { type: "Textiles", creditPerItem: 1.5, description: "Clean clothing and fabrics" },
-  { type: "Metal Scrap", creditPerItem: 3.0, description: "Clean metal items and scrap" },
-]
+  {
+    type: "Textiles",
+    creditPerItem: 1.5,
+    description: "Clean clothing and fabrics",
+  },
+  {
+    type: "Metal Scrap",
+    creditPerItem: 3.0,
+    description: "Clean metal items and scrap",
+  },
+];
 
 const collectionCenters = [
   "Downtown Collection Center",
@@ -35,7 +77,7 @@ const collectionCenters = [
   "East Side Collection Center",
   "West End Collection Center",
   "South Bay Collection Center",
-]
+];
 
 export function RecyclingSubmissionModal({
   isOpen,
@@ -43,58 +85,86 @@ export function RecyclingSubmissionModal({
   user,
   onSubmissionSuccess,
 }: RecyclingSubmissionModalProps) {
-  const [selectedType, setSelectedType] = useState("")
-  const [quantity, setQuantity] = useState(1)
-  const [description, setDescription] = useState("")
-  const [location, setLocation] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedType, setSelectedType] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imagePath, setImagePath] = useState("");
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
-  const selectedCategory = recyclingCategories.find((cat) => cat.type === selectedType)
-  const estimatedCredits = selectedCategory ? selectedCategory.creditPerItem * quantity : 0
+  const selectedCategory = recyclingCategories.find(
+    (cat) => cat.type === selectedType
+  );
+  const estimatedCredits = selectedCategory
+    ? selectedCategory.creditPerItem * quantity
+    : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedType || quantity < 1 || !location) return
+    e.preventDefault();
+    if (!selectedType || quantity < 0 || !location) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const submission = submitRecyclingItem({
-        userId: user.id,
-        userName: user.name,
-        userEmail: user.email,
-        itemType: selectedType,
-        quantity,
-        description,
-        estimatedCredits,
-        location,
-      })
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          authorId: user.id,
+          type: selectedType.trim().replace(/ /g, "_"),
+          quantity: quantity,
+          desc: description,
+          itemCredits: estimatedCredits,
+          location: location,
+          isApproved: false,
+          isAvailable: false,
+          imagePath: "/images/placeholder-image.png",
 
-      console.log("Recycling submission created:", submission)
+        }),
+      });
+      if (!res.ok) throw ("Failed to submit recycling item");
+      console.log("Recycling submission created");
+      console.log(user.id, quantity, selectedType, description, location, imagePath);
 
       // Reset form
-      setSelectedType("")
-      setQuantity(1)
-      setDescription("")
-      setLocation("")
+      setSelectedType("");
+      setQuantity(1);
+      setDescription("");
+      setLocation("");
+      setImagePath("");
 
-      onSubmissionSuccess()
-      onClose()
+      onSubmissionSuccess();
+      onClose();
     } catch (error) {
-      console.error("Submission error:", error)
+      console.log("Submission error:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
+
+  // Handle image upload and preview
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImagePath(URL.createObjectURL(file)); // Preview the image
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -105,8 +175,8 @@ export function RecyclingSubmissionModal({
             Submit Recycling Items
           </CardTitle>
           <CardDescription>
-            Submit your recycling items for review and earn credits. Items will be verified before credits are added to
-            your account.
+            Submit your recycling items for review and earn credits. Items will
+            be verified before credits are added to your account.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -122,13 +192,19 @@ export function RecyclingSubmissionModal({
                     <SelectItem key={category.type} value={category.type}>
                       <div className="flex justify-between items-center w-full">
                         <span>{category.type}</span>
-                        <span className="text-green-600 ml-4">${category.creditPerItem}/item</span>
+                        <span className="text-green-600 ml-4">
+                          ${category.creditPerItem}/item
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {selectedCategory && <p className="text-sm text-gray-600 mt-1">{selectedCategory.description}</p>}
+              {selectedCategory && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedCategory.description}
+                </p>
+              )}
             </div>
 
             <div>
@@ -138,7 +214,9 @@ export function RecyclingSubmissionModal({
                 type="number"
                 min="1"
                 value={quantity}
-                onChange={(e) => setQuantity(Number.parseInt(e.target.value) || 1)}
+                onChange={(e) =>
+                  setQuantity(Number.parseInt(e.target.value) || 1)
+                }
                 required
               />
             </div>
@@ -170,21 +248,53 @@ export function RecyclingSubmissionModal({
               />
             </div>
 
+            {/* Image upload section */}
+            <div>
+              <Label htmlFor="imageUpload">Upload Image (Optional)</Label>
+              <input
+                id="imageUpload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="block mt-2"
+              />
+              {imagePath && (
+                <div className="mt-4">
+                  <Image
+                    src={imagePath}
+                    alt="Uploaded Recycling Item"
+                    width={320}
+                    height={160}
+                    className="rounded border object-contain"
+                    unoptimized
+                  />
+                </div>
+              )}
+            </div>
+
             {selectedType && (
               <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-green-800 mb-2">Estimated Credits</h4>
-                <p className="text-2xl font-bold text-green-600">${estimatedCredits.toFixed(2)}</p>
+                <h4 className="font-semibold text-green-800 mb-2">
+                  Estimated Credits
+                </h4>
+                <p className="text-2xl font-bold text-green-600">
+                  ${estimatedCredits.toFixed(2)}
+                </p>
                 <p className="text-sm text-green-700">
-                  {quantity} × {selectedCategory?.type} × ${selectedCategory?.creditPerItem}/item
+                  {quantity} × {selectedCategory?.type} × $
+                  {selectedCategory?.creditPerItem}/item
                 </p>
                 <p className="text-xs text-green-600 mt-2">
-                  *Final credits may vary based on actual condition and verification
+                  *Final credits may vary based on actual condition and
+                  verification
                 </p>
               </div>
             )}
 
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-blue-800 mb-2">Submission Process</h4>
+              <h4 className="font-semibold text-blue-800 mb-2">
+                Submission Process
+              </h4>
               <ol className="text-sm text-blue-700 space-y-1">
                 <li>1. Submit your recycling request online</li>
                 <li>2. Bring items to selected collection center</li>
@@ -195,10 +305,14 @@ export function RecyclingSubmissionModal({
             </div>
 
             <div className="bg-yellow-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-yellow-800 mb-2">Important Guidelines</h4>
+              <h4 className="font-semibold text-yellow-800 mb-2">
+                Important Guidelines
+              </h4>
               <ul className="text-sm text-yellow-700 space-y-1">
                 <li>• Items must be clean and sorted by category</li>
-                <li>• Electronics should be in working or repairable condition</li>
+                <li>
+                  • Electronics should be in working or repairable condition
+                </li>
                 <li>• Hazardous materials are not accepted</li>
                 <li>• Bring valid ID when dropping off items</li>
                 <li>• Credits are awarded only after verification</li>
@@ -209,11 +323,18 @@ export function RecyclingSubmissionModal({
               <Button
                 type="submit"
                 className="flex-1 bg-green-500 hover:bg-green-600"
-                disabled={!selectedType || quantity < 1 || !location || isSubmitting}
+                disabled={
+                  !selectedType || quantity < 1 || !location || isSubmitting
+                }
               >
                 {isSubmitting ? "Submitting..." : "Submit for Review"}
               </Button>
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
             </div>
@@ -221,5 +342,5 @@ export function RecyclingSubmissionModal({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

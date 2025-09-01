@@ -39,9 +39,9 @@ export function UserDashboard({ user, onViewAccount, onUpdate }: UserDashboardPr
     console.log("user in dashboard:", user);
 
   useEffect(() => {
-    fetch("/api/posts/count")
+    fetch(`/api/posts?authorId=${user.id}`)
       .then(res => res.json())
-      .then(data => setPostCount(data.count ?? 0))
+      .then(data => setPostCount(Array.isArray(data) ? data.length : 0))
       .catch(() => setPostCount(0));
   }, [user.id]);
 
@@ -52,8 +52,8 @@ export function UserDashboard({ user, onViewAccount, onUpdate }: UserDashboardPr
   const [userData, setUserData] = useState(null);
   const [postCount, setPostCount] = useState<number>(0);
 
-  const getRecyclingSubmissionsByUser = async (id: string) => {
-      const response = await fetch(`/api/posts/${id}`, {
+  const getRecyclingSubmissionsByUser = async (authorId: string) => {
+      const response = await fetch(`/api/posts?authorId=${authorId}`, {
         method: 'GET',
         headers: { "content-type": "application/json" },
       })
@@ -202,7 +202,7 @@ export function UserDashboard({ user, onViewAccount, onUpdate }: UserDashboardPr
               {Array.isArray(userSubmissions) && userSubmissions.slice(0, 5).map((submission) => (
                 <div key={submission.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
-                    <h4 className="font-semibold">{submission.itemType}</h4>
+                    <h4 className="font-semibold">{submission.type}</h4>
                     <p className="text-sm text-gray-600">Quantity: {submission.quantity} items</p>
                     <p className="text-sm text-gray-500">{submission.submissionDate}</p>
                     <p className="text-xs text-gray-500">{submission.location}</p>
@@ -246,6 +246,7 @@ export function UserDashboard({ user, onViewAccount, onUpdate }: UserDashboardPr
           isOpen={showRecyclingModal}
           onClose={() => setShowRecyclingModal(false)}
           user={user}
+          post={null}
           onSubmissionSuccess={handleSubmissionSuccess}
         />
       </div>

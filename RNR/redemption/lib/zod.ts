@@ -106,7 +106,7 @@ export const postFilterObjSchema = z.object({
       equals: z.date().optional(),
     })
     .optional(),
-  credits: z
+  itemCredits: z
     .object({
       gte: z.int().positive().optional(),
       lte: z.int().positive().optional(),
@@ -122,7 +122,7 @@ export const postSortObjSchema = z.object({
   createdAt: sortTypes.optional(),
   updatedAt: sortTypes.optional(),
   type: sortTypes.optional(),
-  credits: sortTypes.optional(),
+  itemCredits: sortTypes.optional(),
   isApproved: sortTypes.optional(),
   authorId: sortTypes.optional(),
 });
@@ -130,14 +130,16 @@ export const postSortObjSchema = z.object({
 export const postUpdateObjSchema = z.object({
   type: postTypes.optional(),
   desc: z.string().trim().optional(),
-  credits: z.int().optional(),
+  itemCredits: z.int().optional(),
   isApproved: z.boolean().optional(),
 });
 
 export const postCreateSchema = z.object({
   type: postTypes,
   desc: z.string().optional(),
-  credits: z.int().positive(),
+  location: z.string().min(3).max(255),
+  itemCredits: z.int().positive(),
+  quantity: z.number().positive(),
   authorId: userIdSchema,
 });
 

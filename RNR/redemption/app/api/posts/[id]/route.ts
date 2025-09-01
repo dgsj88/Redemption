@@ -23,7 +23,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
         id: parsedId,
       },
       include: {
-        authorId: {
+        Author: {
           select: {
             email: true,
             name: true,
@@ -90,7 +90,7 @@ export async function PUT(
       const { error: errMsg, status } = prismaErrorHandler(error);
       return Response.json({ error: errMsg }, { status });
     }
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: typeof error === "object" && error !== null && "message" in error ? (error as { message: string }).message : String(error) }, { status: 500 });
   }
 }
 
@@ -132,3 +132,4 @@ export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
     return Response.json({ error }, { status: 500 });
   }
 }
+
