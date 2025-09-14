@@ -25,10 +25,9 @@ interface UserDashboardProps {
 
   onTradeIn: () => void
   onViewAccount: () => void
-  onUpdate: (user: DatabaseUser) => void
 }
 
-export function UserDashboard({ user, onViewAccount, onUpdate }: UserDashboardProps) {
+export function UserDashboard({ user, onViewAccount }: UserDashboardProps) {
 
   useEffect(() => {
       fetch(`/api/users/${user.id}`)
@@ -84,7 +83,7 @@ export function UserDashboard({ user, onViewAccount, onUpdate }: UserDashboardPr
 
   // If showing marketplace, render it instead of dashboard
   if (showMarketplace) {
-    return <Marketplace user={user} onBack={handleBackFromMarketplace} onUserUpdate={onUpdate} />
+    return <Marketplace user={user} onBack={handleBackFromMarketplace} />
   }
 
   const getStatusColor = (status: string) => {

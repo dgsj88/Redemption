@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 // import { AdminSubmissions } from "@/app/dashboard/_components/admin-submissions";
 // import { SMTPConfigPage } from "@/app/dashboard/_components/smtp-config-page"
 // import { postTypes } from "@/lib/zod";
@@ -706,32 +707,61 @@ function AdminSubmissions(props: AdminSubmissionsProps) {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {marketplaceItems.map((item) => (
-                  <div key={item.id} className="border rounded-lg p-4">
-                    <div className="aspect-square bg-gray-200 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-gray-500">No Image</span>
-                    </div>
-                    <h3 className="font-medium">{item.desc}</h3>
-                    <p className="text-sm text-gray-600 mb-2">
-                      {item.desc}
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold">
-                        ${item.itemCredits.toFixed(2)}
-                      </span>
-                      <Badge variant={item.isAvailable ? "default" : "secondary"}>
-                        {item.isAvailable ? "Available" : "Sold Out"}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Added: {new Date(item.createdAt).toLocaleDateString("en-GB",{
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </p>
-                  </div>
-                ))}
+{marketplaceItems.map((item) => {
+  // Find the user with matching authorId
+  const seller = users.find((u) => u.id === item.authorId);
+
+  return (
+    <div key={item.id} className="border rounded-lg p-4">
+      <>
+        {/* <div className="aspect-square bg-gray-200 rounded-lg mb-3 flex items-center justify-center">
+          <span className="text-gray-500">No Image</span>
+        </div> */}
+
+        {item.imagePath && item.imagePath.length > 0 ? (
+          <Image
+            src={Array.isArray(item.imagePath) ? item.imagePath[0] : item.imagePath}
+            alt={item.desc}
+            width={200}
+            height={200}
+            className="object-contain w-full h-48 rounded-lg mb-3 bg-white"
+            //onError={(e) => { e.currentTarget.style.display = "none"; }}
+          />
+        ) : (
+          <div className="aspect-square bg-gray-200 rounded-lg mb-3 flex items-center justify-center">
+            <span className="text-gray-500">No Image</span>
+          </div>
+        )}
+
+        <h3 className="font-medium">{item.desc}</h3>
+        {/* <p className="text-sm text-gray-600 mb-2">
+          {item.desc}
+        </p> */}
+        <p className="text-sm text-gray-600 mb-1">
+          Seller: {seller ? seller.name || seller.email : item.authorId}
+        </p>
+        <p className="text-xs text-gray-500 mb-2">
+          Seller Email: {seller ? seller.email : "N/A"}
+        </p>
+        <div className="flex justify-between items-center mt-2">
+          <span className="font-semibold">
+            ${item.itemCredits.toFixed(2)}
+          </span>
+          <Badge variant={item.isAvailable ? "default" : "secondary"}>
+            {item.isAvailable ? "Available" : "Sold Out"}
+          </Badge>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Added: {new Date(item.createdAt).toLocaleDateString("en-GB",{
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })}
+        </p>
+      </>
+    </div>
+  );
+})}
               </div>
             </CardContent>
           </Card>

@@ -49,10 +49,9 @@ model Transaction {
   postId        String   @unique
   buyerId       String
   sellerId      String
+  status        String   // "pending", "confirmed", "rejected"
   agreedCredits Int      @default(0)
   isCompleted   Boolean  @default(false)
-  buyerAgreed   Boolean  @default(false)  
-  sellerAgreed  Boolean  @default(false)
   Buyer         User     @relation("Buyer", fields: [buyerId], references: [id])
   Post          Post     @relation("post", fields: [postId], references: [id])
   Seller        User     @relation("Seller", fields: [sellerId], references: [id])

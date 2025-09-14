@@ -3,10 +3,12 @@ import prisma from "@/lib/prisma";
 import {
   postCreateSchema,
   postFilterObjSchema,
+  postIdSchema,
   postSortObjSchema,
   postTypes,
   sortTypes,
 } from "@/lib/zod";
+import { Item } from "@radix-ui/react-select";
 import z from "zod";
 
 //some helpers
@@ -165,6 +167,12 @@ export async function POST(req: Request) {
 
     const reqObj = await req.json();
     const parsedReqObj = postCreateSchema.parse(reqObj);
+
+    await prisma.post.update({
+      where: { id: post.id },
+      data: { isAvailable: false },
+    });
+
     await prisma.post.create({
       data: parsedReqObj,
     });

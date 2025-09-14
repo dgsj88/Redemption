@@ -159,17 +159,17 @@ function buildFilterObject(searchParams: URLSearchParams) {
         postFilterObj.updatedAt.equals = new Date(postUpdatedAtEqFilter);
     }
     if (hasPostCreditsFilter) {
-      postFilterObj.credits = {};
+      postFilterObj.itemCredits = {};
       if (postCreditsGteFilter)
-        postFilterObj.credits.gte = parseInt(postCreditsGteFilter);
+        postFilterObj.itemCredits.gte = parseInt(postCreditsGteFilter);
       if (postCreditsLteFilter)
-        postFilterObj.credits.lte = parseInt(postCreditsLteFilter);
+        postFilterObj.itemCredits.lte = parseInt(postCreditsLteFilter);
       if (postCreditsGtFilter)
-        postFilterObj.credits.gt = parseInt(postCreditsGtFilter);
+        postFilterObj.itemCredits.gt = parseInt(postCreditsGtFilter);
       if (postCreditsLtFilter)
-        postFilterObj.credits.lt = parseInt(postCreditsLtFilter);
+        postFilterObj.itemCredits.lt = parseInt(postCreditsLtFilter);
       if (postCreditsEqFilter)
-        postFilterObj.credits.equals = parseInt(postCreditsEqFilter);
+        postFilterObj.itemCredits.equals = parseInt(postCreditsEqFilter);
     }
     filterObj.post = postFilterObj;
   }
@@ -204,7 +204,7 @@ function buildSortObject(searchParams: URLSearchParams) {
     if (postTypeSort)
       postSortObj.type = postTypeSort as z.infer<typeof sortTypes>;
     if (postCreditSort)
-      postSortObj.credits = postCreditSort as z.infer<typeof sortTypes>;
+      postSortObj.itemCredits = postCreditSort as z.infer<typeof sortTypes>;
     if (postIsApprovedSort)
       postSortObj.isApproved = postIsApprovedSort as z.infer<typeof sortTypes>;
     if (postAuthorIdSort)
@@ -251,20 +251,28 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const reqObj = await req.json();
+    const { buyerId, sellerId,status, postId } = reqObj;
+    // const session = await auth();
     const parsedReqObj = transactionCreateReqSchema.parse(reqObj);
     if (parsedReqObj.buyerId === parsedReqObj.sellerId)
       return Response.json(
         { error: "buyerId cannot be equal to sellerId" },
         { status: 400 }
       );
-    await prisma.transaction.create({
+    const transaction = await prisma.transaction.create({
       data: {
-        postId: parsedReqObj.postId,
-        buyer: { connect: { id: parsedReqObj.buyerId } },
-        seller: { connect: { id: parsedReqObj.sellerId } }
+        buyerId: buyerId,
+        sellerId: sellerId,
+        postId: postId,
+        status: status,
       },
     });
-    return Response.json({}, { status: 204 });
+    await prisma.post.update({
+      where: { id: postId },
+      data: { isAvailable: false },
+    });
+
+    return Response.json({ success: status, transaction }, {});
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.issues }, { status: 400 });

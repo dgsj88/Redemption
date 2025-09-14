@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { type Post, type DatabaseUser } from "@/lib/user-database";
 import Image from "next/image";
+import { fileURLToPath, pathToFileURL } from "url";
 
 interface RecyclingSubmissionModalProps {
   isOpen: boolean;
@@ -91,6 +92,7 @@ export function RecyclingSubmissionModal({
   const [location, setLocation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePath, setImagePath] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   if (!isOpen) return null;
 
@@ -103,10 +105,25 @@ export function RecyclingSubmissionModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedType || quantity < 0 || !location) return;
-
     setIsSubmitting(true);
 
+    // If you want to upload the file to the backend:
+    let uploadedImagePath = "/file.svg";
+    if (imagePath) {
+      const formData = new FormData();
+      formData.append("file", imagePath);
+
+      // const uploadRes = await fetch("/api/upload", {
+      //   method: "POST",
+      //   body: formData,
+      // });
+      // if (uploadRes.ok) {
+      //   const { imageUrl } = await uploadRes.json();
+      //   uploadedImagePath = imageUrl; // e.g., "/image/filename.jpg"
+      // }
+    }
+
+    // Then submit the recycling item with the correct image path:
     try {
       const res = await fetch("/api/posts", {
         method: "POST",
@@ -122,13 +139,19 @@ export function RecyclingSubmissionModal({
           location: location,
           isApproved: false,
           isAvailable: false,
-          imagePath: "/images/placeholder-image.png",
-
+          imagePath: uploadedImagePath,
         }),
       });
-      if (!res.ok) throw ("Failed to submit recycling item");
+      if (!res.ok) throw "Failed to submit recycling item";
       console.log("Recycling submission created");
-      console.log(user.id, quantity, selectedType, description, location, imagePath);
+      console.log(
+        user.id,
+        quantity,
+        selectedType,
+        description,
+        location,
+        imagePath
+      );
 
       // Reset form
       setSelectedType("");
@@ -150,7 +173,9 @@ export function RecyclingSubmissionModal({
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setImagePath(URL.createObjectURL(file)); // Preview the image
+      setImageFile(file);
+      setImagePath(URL.createObjectURL(file)); // Preview only
+      setUploadedImagePath(URL.createObjectURL(file));
     }
   };
 
@@ -344,3 +369,7 @@ export function RecyclingSubmissionModal({
     </div>
   );
 }
+function setUploadedImagePath(arg0: string) {
+  throw new Error("Function not implemented.");
+}
+

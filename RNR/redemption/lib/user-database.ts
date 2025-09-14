@@ -35,8 +35,6 @@ export interface Transaction {
   sellerId: string;
   agreedCredits: number;
   isCompleted: boolean;
-  buyerAgreed: boolean;
-  sellerAgreed: boolean;
 }
 
 export interface Submission {
